@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings</title>
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="stylesheet" href="assets/css/admin-responsive.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div id="sidebarContent"></div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <!-- Header -->
+            <header class="admin-dashboard-header settings-page-header">
+                <div><h1>Settings</h1><p>Manage your store identity, contact details, and customer-facing information.</p></div>
+                <div class="settings-status"><span></span>All changes are saved to your store</div>
+            </header>
+
+            <!-- Settings Form -->
+            <div class="settings-container">
+                <!-- Tabs for different settings -->
+                <div class="settings-tabs">
+                    <button class="tab-btn active" data-tab="store-info">Store Information</button>
+                    <button class="tab-btn" data-tab="admin-credentials">Admin Account</button>
+                </div>
+
+                <!-- Admin Credentials Tab -->
+                <form id="adminCredentialsForm" class="settings-form tab-content">
+                    <fieldset>
+                        <legend>Admin Account</legend>
+                        <p class="settings-intro">Update the administrator account used to access the dashboard.</p>
+                        <div class="settings-form-grid">
+                            <div class="settings-field"><label for="admin_username">Username</label><input id="admin_username" name="username" type="text" autocomplete="username" placeholder="Admin username"></div>
+                            <div class="settings-field"><label for="admin_email">Email address</label><input id="admin_email" name="email" type="email" autocomplete="email" placeholder="admin@example.com"></div>
+                            <div class="settings-field"><label for="current_password">Current password</label><input id="current_password" name="current_password" type="password" autocomplete="current-password"></div>
+                            <div class="settings-field"><label for="new_password">New password</label><input id="new_password" name="new_password" type="password" autocomplete="new-password"></div>
+                        </div>
+                    </fieldset>
+                    <button type="submit" class="btn btn-primary">Save Account Changes</button>
+                </form>
+
+                <!-- Store Information Tab -->
+                <form id="storeInfoForm" class="settings-form tab-content active">
+                    <fieldset>
+                        <legend>Store Information</legend>
+                        <p class="settings-intro">These details appear across your storefront and customer communications.</p>
+                        <div class="settings-layout">
+                            <div class="settings-fields-panel">
+                                <div class="settings-form-grid">
+                                    <div class="settings-field"><label for="store_name">Store name</label><input id="store_name" name="store_name" required></div>
+                                    <div class="settings-field"><label for="whatsapp_number">WhatsApp business number</label><input id="whatsapp_number" name="whatsapp_number" placeholder="+250 7xx xxx xxx"></div>
+                                    <div class="settings-field"><label for="phone">Phone number</label><input id="phone" name="phone" placeholder="+250 7xx xxx xxx"></div>
+                                    <div class="settings-field"><label for="email">Store email</label><input id="email" name="email" type="email" placeholder="hello@yourstore.com"></div>
+                                    <div class="settings-field settings-field-wide"><label for="address">Store address</label><input id="address" name="address" placeholder="Kigali, Rwanda"></div>
+                                    <div class="settings-field settings-field-wide"><label for="description">Store description</label><textarea id="description" name="description" rows="4" placeholder="Tell customers what makes your store special."></textarea></div>
+                                    <div class="settings-field"><label for="opening_hours">Opening hours</label><input id="opening_hours" name="opening_hours" placeholder="Mon - Sat, 8:00 - 18:00"></div>
+                                    <div class="settings-field"><label for="logo_path">Logo path</label><input id="logo_path" name="logo_path" placeholder="/images/logo.png"></div>
+                                    <div class="settings-field settings-field-wide"><label for="delivery_info">Delivery information</label><textarea id="delivery_info" name="delivery_info" rows="3" placeholder="Delivery times, areas, and fees."></textarea></div>
+                                </div>
+                            </div>
+                            <aside class="settings-preview"><span class="preview-label">STORE PREVIEW</span><img src="/images/logo.png" id="settingsLogoPreview" alt="Store logo"><h3 id="settingsStorePreview">Your store</h3><p id="settingsDescriptionPreview">Your store description will appear here.</p><div><span>☎</span><strong id="settingsPhonePreview">Phone not set</strong></div><div><span>◉</span><strong id="settingsWhatsappPreview">WhatsApp not set</strong></div></aside>
+                        </div>
+                    </fieldset>
+                    <button type="submit" class="btn btn-primary">Save Store Information</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="assets/js/admin.js"></script>
+    <script src="assets/js/settings.js"></script>
+</body>
+</html>

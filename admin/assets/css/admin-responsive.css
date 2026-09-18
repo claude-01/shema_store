@@ -1,0 +1,325 @@
+/**
+ * SHEMA STORE - Admin Responsive Styles
+ */
+
+@media (max-width: 1024px) {
+    .admin-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        display: block;
+        padding: 14px 18px;
+        overflow: visible;
+    }
+
+    .admin-content {
+        margin-left: 0;
+        padding: 24px;
+        min-width: 0;
+    }
+
+    .admin-brand {
+        width: 150px;
+        height: 70px;
+        margin: 0 auto 14px !important;
+    }
+
+    .admin-brand img {
+        width: 66px;
+        height: 66px;
+    }
+
+    .sidebar nav {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 2px 2px 6px;
+        scrollbar-width: thin;
+    }
+
+    .sidebar nav hr {
+        display: none;
+    }
+
+    .sidebar a.nav-link {
+        flex: 0 0 auto;
+        width: auto;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 768px) {
+    html {
+        font-size: 15px;
+    }
+
+    .admin-content {
+        padding: 18px;
+    }
+
+    .admin-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: left;
+        align-items: flex-start;
+        margin-bottom: 18px;
+    }
+
+    .admin-header h1 {
+        font-size: 1.3rem;
+    }
+
+    .admin-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-form-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .admin-form {
+        padding: 20px;
+    }
+
+    .admin-form fieldset {
+        padding: 0;
+    }
+
+    .admin-field input,
+    .admin-field select,
+    .admin-field textarea,
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    .admin-field textarea {
+        min-height: 125px;
+    }
+
+    .products-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        min-width: 760px;
+        font-size: 0.9rem;
+    }
+
+    table th,
+    table td {
+        padding: 8px;
+    }
+
+    .sidebar a,
+    .sidebar button {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+
+    .admin-dashboard-header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .admin-dashboard-header h1 {
+        font-size: 1.55rem;
+    }
+
+    .dashboard-header-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-search {
+        flex: 1 1 220px;
+        width: auto;
+    }
+
+    .dashboard-two-column,
+    .lower-dashboard-grid,
+    .actions-notifications {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-card {
+        min-width: 0;
+        padding: 18px;
+    }
+
+    .sales-chart {
+        height: 210px;
+    }
+}
+
+@media (max-width: 576px) {
+    body {
+        overflow-x: hidden;
+    }
+
+    .sidebar {
+        padding: 10px 12px;
+    }
+
+    .admin-brand {
+        width: 116px;
+        height: 58px;
+        margin-bottom: 10px !important;
+    }
+
+    .admin-brand img {
+        width: 54px;
+        height: 54px;
+    }
+
+    .sidebar a.nav-link {
+        padding: 10px 11px;
+        font-size: .72rem;
+    }
+
+    .admin-content {
+        padding: 12px;
+    }
+
+    .admin-header {
+        padding: 14px;
+        border-radius: 8px;
+    }
+
+    .admin-header h1 {
+        font-size: 1.15rem;
+    }
+
+    .admin-form {
+        padding: 15px;
+    }
+
+    .admin-form fieldset {
+        padding: 14px;
+    }
+
+    .login-box {
+        width: calc(100% - 24px);
+        padding: 24px 18px;
+    }
+
+    .admin-login-logo {
+        width: 88px;
+        height: 88px;
+    }
+
+    table {
+        font-size: 0.8rem;
+    }
+
+    table th,
+    table td {
+        padding: 6px;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+
+    .admin-form-actions {
+        gap: 8px;
+    }
+
+    .admin-form-actions .btn {
+        min-height: 44px;
+    }
+
+    .admin-dashboard-header h1 {
+        font-size: 1.35rem;
+    }
+
+    .admin-dashboard-header p {
+        font-size: .76rem;
+        line-height: 1.45;
+    }
+
+    .dashboard-header-actions {
+        gap: 8px;
+    }
+
+    .dashboard-search {
+        flex-basis: 100%;
+        width: 100%;
+    }
+
+    .admin-profile {
+        margin-left: auto;
+    }
+
+    .dashboard-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .dashboard-stat-card {
+        min-height: 100px;
+        gap: 8px;
+        padding: 12px;
+    }
+
+    .dashboard-stat-card strong {
+        font-size: .9rem;
+        overflow-wrap: anywhere;
+    }
+
+    .dashboard-stat-card p,
+    .dashboard-stat-card small {
+        font-size: .6rem;
+    }
+
+    .dashboard-section-heading {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .chart-filters {
+        width: 100%;
+    }
+
+    .chart-filters button {
+        flex: 1;
+    }
+
+    .dashboard-product-row {
+        grid-template-columns: 36px minmax(0, 1fr) auto;
+    }
+
+    .dashboard-product-row b {
+        display: none;
+    }
+
+    .stock-row {
+        grid-template-columns: 36px minmax(0, 1fr);
+    }
+
+    .stock-meter {
+        grid-column: 2;
+        width: 100%;
+    }
+
+    .quick-actions {
+        grid-template-columns: 1fr;
+    }
+}

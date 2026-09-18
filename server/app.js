@@ -1,0 +1,86 @@
+/**
+ * SHEMA STORE - Express Application Setup
+ */
+
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const session = require('express-session');
+const path = require('path');
+const { requireAdmin } = require('./middleware/authMiddleware');
+
+const app = express();
+
+// Middleware
+app.use(helmet()); // Security headers
+app.use(cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:7070',
+    credentials: true
+}));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Session configuration
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'change_this_secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
+
+// Static files
+app.use(express.static(path.join(__dirname, '../client')));
+app.use('/admin', (req, res, next) => {
+    const publicAdminAsset = req.path === '/login.html' || req.path.startsWith('/assets/');
+    if (publicAdminAsset || (req.session && req.session.adminId)) return next();
+    return res.redirect('/admin/login.html');
+}, express.static(path.join(__dirname, '../admin')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '../admin/dashboard.html')));
+app.get('/admin/', (req, res) => res.sendFile(path.join(__dirname, '../admin/dashboard.html')));
+app.use('/images', express.static(path.join(__dirname, '../images')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.get('/category/:slug', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/category.html'));
+});
+app.get('/product/:id', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/product.html'));
+});
+
+// Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/cart', require('./routes/cartRoutes'));
+app.use('/api/wishlist', require('./routes/wishlistRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/reviews', require('./routes/reviewRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/images', require('./routes/imagesRoutes'));
+app.use('/api/delivery-zones', require('./routes/deliveryRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err);
+    res.status(err.status || 500).json({
+        success: false,
+        message: err.message || 'Internal Server Error'
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'Route not found'
+    });
+});
+
+module.exports = app;

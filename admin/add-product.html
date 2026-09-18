@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product</title>
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="stylesheet" href="assets/css/admin-responsive.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div id="sidebarContent"></div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <!-- Header -->
+            <header class="admin-header">
+                <h1>Add New Product</h1>
+            </header>
+
+            <!-- Add Product Form -->
+            <form id="addProductForm" class="admin-form">
+                <fieldset>
+                    <legend>Product Information</legend>
+                    <div class="admin-form-grid">
+                        <div class="admin-field"><label for="name">Name</label><input type="text" id="name" name="name" required /></div>
+                        <div class="admin-field"><label for="category_id">Category <span class="required-mark">*</span></label><select id="category_id" name="category_id" required><option value="">Loading categories...</option></select></div>
+                        <div class="admin-field"><label for="price">Price</label><input type="number" id="price" name="price" step="0.01" required /></div>
+                        <div class="admin-field"><label for="stock">Stock</label><input type="number" id="stock" name="stock" required /></div>
+                        <div class="admin-field admin-field-wide"><label for="description">Description</label><textarea id="description" name="description"></textarea></div>
+                        <div class="admin-field admin-field-wide"><label for="imageFile">Product image</label><input type="file" id="imageFile" name="image" accept="image/jpeg,image/png,image/webp" required /><small class="field-help">Choose a JPG, PNG, or WEBP image from your device. Maximum size: 5MB.</small><div id="imagePreview" class="upload-preview"></div></div>
+                    </div>
+                </fieldset>
+                <button type="submit" class="btn btn-primary">Add Product</button>
+                <a href="products.html" class="btn btn-secondary">Cancel</a>
+            </form>
+        </main>
+    </div>
+
+    <script src="assets/js/admin.js"></script>
+    <script src="assets/js/products.js"></script>
+</body>
+</html>

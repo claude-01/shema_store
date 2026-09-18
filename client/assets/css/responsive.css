@@ -1,0 +1,88 @@
+/**
+ * SHEMA STORE - Responsive Styles
+ * Media queries for mobile, tablet, and desktop
+ */
+
+/* Tablet (768px and up) */
+@media (max-width: 768px) {
+    html {
+        font-size: 14px;
+    }
+
+    .container {
+        padding: 0 10px;
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .navbar {
+        flex-direction: column;
+    }
+
+    main {
+        flex-direction: column;
+    }
+}
+
+/* Mobile (576px and below) */
+@media (max-width: 576px) {
+    html {
+        font-size: 14px;
+    }
+
+    .container {
+        padding: 0 10px;
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+        grid-template-columns: 1fr;
+    }
+
+    .navbar {
+        flex-direction: column;
+    }
+
+    main {
+        flex-direction: column;
+    }
+
+    button,
+    .btn {
+        width: 100%;
+        padding: 12px;
+        font-size: 0.95rem;
+    }
+
+    input,
+    textarea,
+    select {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+    }
+}
+
+/* Small Mobile (320px and below) */
+@media (max-width: 320px) {
+    .container {
+        padding: 0 5px;
+    }
+
+    button,
+    .btn {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+}

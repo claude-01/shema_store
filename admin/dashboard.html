@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="stylesheet" href="assets/css/admin-responsive.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div id="sidebarContent"></div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <!-- Header -->
+            <header class="admin-dashboard-header">
+                <div><h1>Dashboard</h1><p>Welcome back, here's what's happening with your store today.</p></div>
+                <div class="dashboard-header-actions"><label class="dashboard-search"><span>⌕</span><input type="search" placeholder="Search dashboard" aria-label="Search dashboard"></label><button class="dashboard-icon-button" type="button" aria-label="Notifications">♧<i></i></button><div class="admin-profile"><span class="admin-avatar">A</span><span><strong id="adminName">Admin</strong><small>Administrator</small></span><button data-action="logout" class="profile-menu" aria-label="Profile menu">⌄</button></div></div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <section class="dashboard" id="dashboardRoot"><div class="dashboard-loading">Loading your store overview...</div></section>
+        </main>
+    </div>
+
+    <script src="assets/js/admin.js"></script>
+    <script src="assets/js/dashboard.js"></script>
+</body>
+</html>

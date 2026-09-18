@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Zones</title>
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="stylesheet" href="assets/css/admin-responsive.css">
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar"><div id="sidebarContent"></div></aside>
+        <main class="admin-content">
+            <header class="admin-header"><h1>Delivery Zones</h1></header>
+            <section>
+                <div id="zonesList"></div>
+                <hr>
+                <h3>Add Zone</h3>
+                <form id="addZoneForm">
+                    <div class="admin-form-grid">
+                        <div class="admin-field"><label for="zoneCity">City</label><input id="zoneCity" required /></div>
+                        <div class="admin-field"><label for="zoneFee">Fee (RWF)</label><input id="zoneFee" type="number" step="0.01" value="0" /></div>
+                        <div class="admin-field"><label for="zoneMinDays">Min days</label><input id="zoneMinDays" type="number" value="1" /></div>
+                        <div class="admin-field"><label for="zoneMaxDays">Max days</label><input id="zoneMaxDays" type="number" value="3" /></div>
+                        <div class="admin-field"><label for="zoneActive">Active</label><select id="zoneActive"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Add Zone</button>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script src="assets/js/admin.js"></script>
+    <script src="assets/js/delivery-zones.js"></script>
+</body>
+</html>

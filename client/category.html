@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category | Shema Store</title>
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+    <nav class="navbar"></nav>
+    <main class="category-page">
+        <div class="container">
+            <nav class="category-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>→</span><a href="/categories.html">Categories</a><span>→</span><strong id="categoryBreadcrumb">Category</strong></nav>
+            <header class="category-page-header">
+                <div><span class="section-kicker">SHOP BY CATEGORY</span><h1 id="categoryTitle">Category</h1><p id="categorySubtitle"></p></div>
+                <span id="categoryCount" class="category-count"></span>
+            </header>
+            <div class="category-results-layout">
+                <aside class="category-filters" id="categoryFilters"></aside>
+                <section class="category-results">
+                    <div class="category-toolbar"><strong id="resultsLabel">Products</strong><label>Sort by <select id="sortProducts"><option value="featured">Featured</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="name">Name</option></select></label></div>
+                    <div id="categoryProducts" class="products-grid category-products-grid"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+    <footer class="footer"></footer>
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/products.js"></script>
+    <script src="/assets/js/category.js"></script>
+    <script src="/assets/js/main.js"></script>
+</body>
+</html>

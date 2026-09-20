@@ -27,6 +27,7 @@ async function loadCategoriesList() {
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Cover</th>
                         <th>Name</th>
                         <th>Description</th>
                         <th>Status</th>
@@ -37,6 +38,9 @@ async function loadCategoriesList() {
                     ${categories.map(category => `
                         <tr data-id="${category.id}">
                             <td>${category.id}</td>
+                            <td>
+                                ${category.image ? `<img src="${category.image}" alt="${category.name}" class="category-cover-thumb" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"> <span style="display:none;">No image</span>` : '<span>No image</span>'}
+                            </td>
                             <td>${category.name}</td>
                             <td>${category.description || '—'}</td>
                             <td>${category.is_active === 0 || category.is_active === false ? 'Inactive' : 'Active'}</td>
@@ -87,8 +91,9 @@ function openAddCategoryForm() {
                     <textarea id="categoryDescription" name="description" rows="4"></textarea>
                 </div>
                 <div class="admin-field">
-                    <label for="categoryImage">Image</label>
-                    <input id="categoryImage" name="image" type="text" placeholder="e.g. /images/category.jpg">
+                    <label for="categoryImage">Cover Image URL</label>
+                    <input id="categoryImage" name="image" type="url" placeholder="https://... or /images/category.jpg">
+                    <small>Use a direct image URL or a local path like /images/category.jpg</small>
                 </div>
                 <div class="admin-field">
                     <label for="categoryStatus">Status</label>
@@ -97,6 +102,10 @@ function openAddCategoryForm() {
                         <option value="0">Inactive</option>
                     </select>
                 </div>
+                <div class="admin-field">
+                    <label>Cover Preview</label>
+                    <img id="categoryImagePreview" src="" alt="Category cover preview" style="max-width: 180px; max-height: 120px; object-fit: cover; display: none; border-radius: 10px; border: 1px solid #ddd; margin-top: 8px;">
+                </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Save Category</button>
                     <button type="button" class="btn btn-secondary" id="cancelCategoryForm">Cancel</button>
@@ -104,6 +113,19 @@ function openAddCategoryForm() {
             </form>
         </div>
     `);
+
+    const imageInput = document.getElementById('categoryImage');
+    const previewImage = document.getElementById('categoryImagePreview');
+    imageInput?.addEventListener('input', () => {
+        const src = imageInput.value.trim();
+        if (!src) {
+            previewImage.style.display = 'none';
+            previewImage.src = '';
+            return;
+        }
+        previewImage.src = src;
+        previewImage.style.display = 'block';
+    });
 
     document.getElementById('categoryForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -173,8 +195,8 @@ async function openEditCategoryForm(categoryId) {
                         <textarea id="categoryDescription" name="description" rows="4">${(category.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
                     </div>
                     <div class="admin-field">
-                        <label for="categoryImage">Image</label>
-                        <input id="categoryImage" name="image" type="text" value="${(category.image || '').replace(/"/g, '&quot;')}">
+                        <label for="categoryImage">Cover Image URL</label>
+                        <input id="categoryImage" name="image" type="url" value="${(category.image || '').replace(/"/g, '&quot;')}" placeholder="https://... or /images/category.jpg">
                     </div>
                     <div class="admin-field">
                         <label for="categoryStatus">Status</label>
@@ -183,6 +205,10 @@ async function openEditCategoryForm(categoryId) {
                             <option value="0" ${category.is_active === 0 || category.is_active === false ? 'selected' : ''}>Inactive</option>
                         </select>
                     </div>
+                    <div class="admin-field">
+                        <label>Cover Preview</label>
+                        <img id="categoryImagePreview" src="${(category.image || '').replace(/"/g, '&quot;')}" alt="Category cover preview" style="max-width: 180px; max-height: 120px; object-fit: cover; display: ${category.image ? 'block' : 'none'}; border-radius: 10px; border: 1px solid #ddd; margin-top: 8px;">
+                    </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Update Category</button>
                         <button type="button" class="btn btn-secondary" id="cancelCategoryForm">Cancel</button>
@@ -190,6 +216,19 @@ async function openEditCategoryForm(categoryId) {
                 </form>
             </div>
         `);
+
+        const imageInput = document.getElementById('categoryImage');
+        const previewImage = document.getElementById('categoryImagePreview');
+        imageInput?.addEventListener('input', () => {
+            const src = imageInput.value.trim();
+            if (!src) {
+                previewImage.style.display = 'none';
+                previewImage.src = '';
+                return;
+            }
+            previewImage.src = src;
+            previewImage.style.display = 'block';
+        });
 
         document.getElementById('categoryForm')?.addEventListener('submit', async (event) => {
             event.preventDefault();

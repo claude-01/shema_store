@@ -29,6 +29,27 @@ async function ensureDatabaseDefaults() {
         const [rows] = await connection.query('SHOW TABLES');
         const tableNames = rows.map(row => Object.values(row)[0]);
 
+        if (!tableNames.includes('admins')) {
+            await connection.query(`
+                CREATE TABLE admins (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) UNIQUE NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    email VARCHAR(100),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )
+            `);
+        }
+
+        const [adminRows] = await connection.query('SELECT COUNT(*) AS total FROM admins');
+        if (!adminRows[0].total) {
+            await connection.query(
+                'INSERT INTO admins (username, email, password) VALUES (?, ?, ?)',
+                ['Shema', 'admin@shema-store.local', '$2b$10$k1Plu9nfVP0fR/95KNy6.ejsIgz57zCks5Ogz5kOAALXPoeLa18zi']
+            );
+        }
+
         if (!tableNames.includes('store_settings')) {
             await connection.query(`
                 CREATE TABLE store_settings (
@@ -91,6 +112,30 @@ async function ensureDatabaseDefaults() {
                     is_main BOOLEAN DEFAULT FALSE,
                     order_position INT DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+        }
+
+        if (!tableNames.includes('product_sizes')) {
+            await connection.query(`
+                CREATE TABLE product_sizes (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    product_id INT NOT NULL,
+                    size VARCHAR(50) NOT NULL,
+                    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+                    UNIQUE KEY unique_product_size (product_id, size)
+                )
+            `);
+        }
+
+        if (!tableNames.includes('product_colors')) {
+            await connection.query(`
+                CREATE TABLE product_colors (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    product_id INT NOT NULL,
+                    color VARCHAR(50) NOT NULL,
+                    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+                    UNIQUE KEY unique_product_color (product_id, color)
                 )
             `);
         }

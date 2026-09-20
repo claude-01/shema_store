@@ -162,12 +162,21 @@ DB_PORT=3306
 DB_USER=<your MySQL user>
 DB_PASSWORD=<your MySQL password>
 DB_NAME=<your database name>
+DB_SSL=false
 SESSION_SECRET=<long random secret>
 JWT_SECRET=<long random secret>
 WHATSAPP_BUSINESS_NUMBER=<optional international number without +>
 ```
 
 Leave `CORS_ORIGIN` empty for the combined deployment. Set it to the exact frontend origin only when the frontend is hosted separately.
+
+You may use one complete MySQL URL instead of the `DB_*` variables:
+
+```text
+DATABASE_URL=mysql://<user>:<password>@<host>:<port>/<database>
+```
+
+Use only one configuration style. If the provider requires TLS, set `DB_SSL=true`.
 
 ## Usage
 

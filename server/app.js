@@ -47,6 +47,7 @@ const sessionStore = new MySQLStore({
     user: databaseConfig.user,
     password: databaseConfig.password,
     database: databaseConfig.database,
+    ssl: databaseConfig.ssl,
     createDatabaseTable: true
 });
 

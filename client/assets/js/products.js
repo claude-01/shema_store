@@ -135,6 +135,8 @@ function createProductCard(product) {
     const price = Number(product.price || 0);
     const stock = Number(product.stock || 0);
     const soldOut = stock <= 0;
+    const description = product.description ? String(product.description).slice(0, 82) + (String(product.description).length > 82 ? '…' : '') : 'Premium everyday essentials for comfort, style, and convenience.';
+    const colorOptions = Array.isArray(product.color_options) && product.color_options.length ? product.color_options.slice(0, 4).map(color => `<span class="color-dot" title="${color.name}"></span>`).join('') : '';
 
     return `
         <article class="product-card" data-product-id="${product.id}">
@@ -150,6 +152,8 @@ function createProductCard(product) {
                     </button>
                 </div>
                 <h3>${product.name}</h3>
+                <p class="product-description">${description}</p>
+                ${colorOptions ? `<div class="product-color-options">${colorOptions}</div>` : ''}
                 <div class="product-price-row">
                     <strong>${formatCurrency(price)}</strong>
                     <span>${formatCurrency(price * 1.12)}</span>

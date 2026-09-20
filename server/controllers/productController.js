@@ -104,6 +104,64 @@ function parseSizes(value) {
     return String(value || '').split(',').map(size => size.trim()).filter(Boolean);
 }
 
+function normalizeProductVariantKey(name = '') {
+    const value = String(name || '').toLowerCase();
+    const withColorRemoved = value
+        .replace(/\s*[-–—:]\s*(black|white|red|blue|green|gold|silver|pink|purple|orange|brown|beige|grey|gray|navy|cream|charcoal|rose|olive|maroon|ivory|multicolor|tan)\b/gi, '')
+        .replace(/\b(black|white|red|blue|green|gold|silver|pink|purple|orange|brown|beige|grey|gray|navy|cream|charcoal|rose|olive|maroon|ivory|multicolor|tan)\b/gi, '')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return withColorRemoved || value.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function extractColorFromName(name = '') {
+    const colorMatch = String(name || '').match(/\b(black|white|red|blue|green|gold|silver|pink|purple|orange|brown|beige|grey|gray|navy|cream|charcoal|rose|olive|maroon|ivory|multicolor|tan)\b/i);
+    return colorMatch ? colorMatch[1] : 'Default';
+}
+
+function productDisplayName(name = '') {
+    return String(name || '').replace(/\s*[-–—:]\s*(black|white|red|blue|green|gold|silver|pink|purple|orange|brown|beige|grey|gray|navy|cream|charcoal|rose|olive|maroon|ivory|multicolor|tan)\b/gi, '').replace(/\s+/g, ' ').trim() || String(name || '').trim();
+}
+
+function mergeDuplicateVariants(products) {
+    const groups = new Map();
+
+    for (const product of products) {
+        const key = normalizeProductVariantKey(product.name || '');
+        if (!groups.has(key)) {
+            groups.set(key, {
+                ...product,
+                name: productDisplayName(product.name),
+                color_options: [],
+                variants: []
+            });
+        }
+
+        const group = groups.get(key);
+        const colorName = extractColorFromName(product.name);
+        if (!group.color_options.some(color => color.name === colorName)) {
+            group.color_options.push({ name: colorName, image: product.image || null });
+        }
+        group.variants.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            stock: product.stock,
+            image: product.image || null,
+            color: colorName,
+            description: product.description || ''
+        });
+    }
+
+    return Array.from(groups.values()).map(group => ({
+        ...group,
+        description: group.description || 'Premium product designed for comfort, style, and everyday use.',
+        color_options: group.color_options.slice(0, 6),
+        variants: group.variants.slice(0, 8)
+    }));
+}
+
 exports.getAllProducts = async (req, res) => {
     try {
         const products = await db.query(`
@@ -116,7 +174,6 @@ exports.getAllProducts = async (req, res) => {
             ORDER BY p.created_at DESC
         `);
 
-        // map missing images to files in /images if possible
         const mapped = products.map(p => {
             try {
                 if (!imageExists(p.image) || p.image.includes('placeholder')) {
@@ -127,7 +184,7 @@ exports.getAllProducts = async (req, res) => {
             return addCategoryFields(p);
         });
 
-        return res.json({ success: true, products: mapped });
+        return res.json({ success: true, products: mergeDuplicateVariants(mapped) });
     } catch (error) {
         console.error('getAllProducts error:', error);
         return res.status(500).json({ success: false, message: 'Failed to fetch products' });

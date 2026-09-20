@@ -262,21 +262,46 @@ async function ensureDatabaseDefaults() {
         const [productRows] = await connection.query('SELECT COUNT(*) AS total FROM products');
         if (!productRows[0].total) {
             const productCatalog = [
-                ['Electronics', 'Samsung Galaxy A15', 'Android smartphone with 128GB storage and 6.5-inch display.', 280000.00, 20],
-                ['Fashion', 'Nike Air Force 1', 'Lightweight everyday sneaker with premium cushioning.', 180000.00, 15],
-                ['Electronics', 'HP Laptop 15.6', 'Reliable laptop for productivity, study, and entertainment.', 1050000.00, 8],
-                ['Home & Living', 'Air Fryer 5.5L', 'Crispy cooking in minutes with adjustable temperature control.', 95000.00, 12],
-                ['Beauty', 'Nivea Skincare Set', 'Hydrating skincare essentials for daily care.', 45000.00, 25],
-                ['Electronics', 'Smart Watch Pro', 'Track fitness, calls, and notifications on the go.', 120000.00, 18],
-                ['Sports & Outdoors', 'Trail Running Backpack', 'Comfortable and durable backpack for daily movement.', 65000.00, 10]
+                ['Electronics', 'Samsung Galaxy A15 - Black', 'Android smartphone with 128GB storage, a bright AMOLED display, and long battery life for everyday use.', 280000.00, 20],
+                ['Fashion', 'Nike Air Max Pulse - White', 'Lightweight lifestyle sneaker with soft cushioning, breathable detailing, and a clean street-ready look.', 180000.00, 15],
+                ['Fashion', 'Nike Air Max Pulse - Black', 'Performance-inspired sneaker with premium cushioning and a bold urban profile in a matte black finish.', 185000.00, 12],
+                ['Electronics', 'HP Laptop 15.6 - Silver', 'Affordable business laptop designed for productivity, study, and online work with solid performance.', 1050000.00, 8],
+                ['Home & Living', 'Air Fryer 5.5L - Black', 'Versatile countertop air fryer for crisp, healthy meals with quick, even cooking.', 95000.00, 12],
+                ['Beauty', 'Nivea Skincare Set - White', 'Hydrating daily care essentials for smoother, fresher skin and a balanced routine.', 45000.00, 25],
+                ['Electronics', 'Smart Watch Pro - Gold', 'Modern smartwatch with fitness tracking, notifications, and a sleek premium display.', 120000.00, 18],
+                ['Sports & Outdoors', 'Trail Running Backpack - Black', 'Comfortable and durable backpack built for commuting, gym sessions, and weekend adventures.', 65000.00, 10],
+                ['Electronics', 'Apple iPhone 14 Pro - Silver', 'Premium smartphone with a vivid display, improved camera system, and all-day battery life.', 1340000.00, 6],
+                ['Home & Living', 'Smart WiFi Speaker - White', 'Compact wireless speaker that delivers clear sound, voice assistance, and easy streaming.', 76000.00, 14]
             ];
 
             for (const [categoryName, name, description, price, stock] of productCatalog) {
                 const [category] = await connection.query('SELECT id FROM categories WHERE name = ? LIMIT 1', [categoryName]);
                 if (category && category[0]) {
-                    await connection.query(
+                    const result = await connection.query(
                         'INSERT INTO products (category_id, name, description, price, stock, is_active, is_featured) VALUES (?, ?, ?, ?, ?, 1, 1)',
                         [category[0].id, name, description, price, stock]
+                    );
+
+                    const productId = result[0].insertId;
+                    let matchedImage = null;
+                    const lowerName = String(name).toLowerCase();
+                    const candidates = [
+                        'shoes.jpg', 'sneakers.jpg', 'watch.jpg', 'phone.jpg', 'laptop.jpg', 'tv.jpg',
+                        'smart wifi.avif', 'download.jpg', 'images.jpg', 'school adidas bag.jpg',
+                        'Home & Kitchen.jpg', 'Apple iPhone 14.jpg', 'Samsung Galaxy A26 5G.jpg'
+                    ];
+                    if (/(shoe|sneaker|trainer|sport)/.test(lowerName)) matchedImage = 'shoes.jpg';
+                    else if (/(watch|smartwatch)/.test(lowerName)) matchedImage = 'watch.jpg';
+                    else if (/(phone|iphone|galaxy)/.test(lowerName)) matchedImage = 'phone.jpg';
+                    else if (/(laptop|computer)/.test(lowerName)) matchedImage = 'laptop.jpg';
+                    else if (/(speaker|audio|wifi)/.test(lowerName)) matchedImage = 'smart wifi.avif';
+                    else if (/(bag|backpack)/.test(lowerName)) matchedImage = 'school adidas bag.jpg';
+                    else if (/(air fryer|kitchen|home)/.test(lowerName)) matchedImage = 'Home & Kitchen.jpg';
+                    else matchedImage = candidates.find(file => lowerName.includes(file.split('.')[0].toLowerCase().replace(/[^a-z0-9]/g, '')) ) || 'download.jpg';
+
+                    await connection.query(
+                        'INSERT INTO product_images (product_id, image_path, is_main, order_position) VALUES (?, ?, 1, 0)',
+                        [productId, `/images/${matchedImage}`]
                     );
                 }
             }

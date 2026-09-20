@@ -7,6 +7,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
+const crypto = require('crypto');
 const path = require('path');
 const { requireAdmin } = require('./middleware/authMiddleware');
 const databaseConfig = require('./config/config').database;
@@ -49,8 +50,14 @@ const sessionStore = new MySQLStore({
     createDatabaseTable: true
 });
 
-const sessionSecret = process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'local-development-session-secret');
-if (!sessionSecret) throw new Error('SESSION_SECRET must be set in production');
+const sessionSecret = process.env.SESSION_SECRET || (
+    process.env.NODE_ENV === 'production'
+        ? crypto.randomBytes(32).toString('hex')
+        : 'local-development-session-secret'
+);
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
+    console.warn('SESSION_SECRET is not configured; sessions will reset when the service restarts. Set it in Render environment variables.');
+}
 
 // Session configuration
 app.use(session({

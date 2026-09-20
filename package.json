@@ -4,6 +4,7 @@
   "description": "SHEMA STORE - Modern E-Commerce Platform",
   "main": "server/server.js",
   "scripts": {
+    "build": "npm install",
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -29,11 +30,6 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
-  },
-  "overrides": {
-    "express-mysql-session": {
-      "mysql2": "3.24.4"
-    }
   },
   "overrides": {
     "express-mysql-session": {

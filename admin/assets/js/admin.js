@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('[data-action="logout"]')?.addEventListener('click', logoutAdmin);
 });
 
-const ADMIN_API = 'http://localhost:7070/api/admin';
+const ADMIN_API = '/api/admin';
 
 /**
  * Check Admin Session

@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadProductsList() {
     try {
         // Use the same live catalog endpoint as the customer products page.
-        const resp = await fetch(`http://localhost:7070/api/products?_=${Date.now()}`, {
+        const resp = await fetch(`/api/products?_=${Date.now()}`, {
             credentials: 'include',
             cache: 'no-store'
         });
@@ -99,7 +99,7 @@ function attachAddProductForm() {
 async function handleAddProduct(e) {
     e.preventDefault();
     try {
-        const API = 'http://localhost:7070/api/products';
+        const API = '/api/products';
         const name = document.querySelector('#name').value;
         const description = document.querySelector('#description').value;
         const price = parseFloat(document.querySelector('#price').value) || 0;
@@ -128,7 +128,7 @@ async function handleAddProduct(e) {
         const uploadData = new FormData();
         imageFiles.forEach(file => uploadData.append('images', file));
         uploadData.append('product_id', created.id);
-        const imageResponse = await fetch('http://localhost:7070/api/images', { method: 'POST', body: uploadData });
+        const imageResponse = await fetch('/api/images', { method: 'POST', body: uploadData });
         const imageData = await imageResponse.json();
         if (!imageResponse.ok) throw new Error(imageData.message || 'Image upload failed');
 
@@ -146,7 +146,7 @@ async function loadProductForEdit() {
     if (!id || !form) return;
 
     try {
-        const response = await fetch(`http://localhost:7070/api/products/${id}`);
+        const response = await fetch(`/api/products/${id}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Failed to load product');
 
@@ -170,7 +170,7 @@ async function loadProductForEdit() {
             const fields = ['name', 'description', 'price', 'stock', 'category_id'];
             const changes = Object.fromEntries(fields.map(field => [field, form.elements[field].value]));
             changes.available_sizes = form.elements.available_sizes?.value || '';
-            const updateResponse = await fetch(`http://localhost:7070/api/products/${id}`, {
+            const updateResponse = await fetch(`/api/products/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(changes)
@@ -182,7 +182,7 @@ async function loadProductForEdit() {
                 const uploadData = new FormData();
                 imageFiles.forEach(file => uploadData.append('images', file));
                 uploadData.append('product_id', id);
-                const imageResponse = await fetch('http://localhost:7070/api/images', { method: 'POST', body: uploadData });
+                const imageResponse = await fetch('/api/images', { method: 'POST', body: uploadData });
                 if (!imageResponse.ok) throw new Error('Product image upload failed');
             }
             showAdminAlert('Product updated successfully', 'success');
@@ -203,7 +203,7 @@ function resolveImagePath(img) {
 async function deleteProduct(id) {
     if (!confirm('Delete product? This cannot be undone.')) return;
     try {
-        const resp = await fetch(`http://localhost:7070/api/products/${id}`, { method: 'DELETE' });
+        const resp = await fetch(`/api/products/${id}`, { method: 'DELETE' });
         const data = await resp.json();
         if (!resp.ok) {
             showAdminAlert(data.message || 'Delete failed', 'error');
@@ -220,7 +220,7 @@ async function deleteProduct(id) {
 async function markSold(id, stock) {
     try {
         const newStock = Math.max(0, (stock || 0) - 1);
-        const resp = await fetch(`http://localhost:7070/api/products/${id}`, {
+        const resp = await fetch(`/api/products/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ stock: newStock })
@@ -240,7 +240,7 @@ async function markSold(id, stock) {
 
 async function populateImageSelect() {
     try {
-        const resp = await fetch('http://localhost:7070/api/images');
+        const resp = await fetch('/api/images');
         const data = await resp.json();
         const list = data.images || [];
         const sel = document.querySelector('#imageSelect');
@@ -263,7 +263,7 @@ async function populateCategorySelect(selectedId = '') {
     if (!select) return;
 
     try {
-        const response = await fetch('http://localhost:7070/api/categories');
+        const response = await fetch('/api/categories');
         const data = await response.json();
         const categories = data.categories || [];
         select.innerHTML = '<option value="">Select a category</option>' + categories.map(category => `<option value="${category.id}">${category.name}</option>`).join('');

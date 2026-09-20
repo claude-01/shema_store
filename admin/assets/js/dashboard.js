@@ -8,7 +8,7 @@ async function loadDashboardData() {
     const root = document.getElementById('dashboardRoot');
     if (!root) return;
     try {
-        const response = await fetch('http://localhost:7070/api/admin/dashboard', { credentials: 'include' });
+        const response = await fetch('/api/admin/dashboard', { credentials: 'include' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Dashboard request failed');
         renderDashboard(root, data);

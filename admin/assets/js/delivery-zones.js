@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadZones() {
     try {
-        const resp = await fetch('http://localhost:7070/api/delivery-zones');
+        const resp = await fetch('/api/delivery-zones');
         const data = await resp.json();
         const list = data.zones || [];
         const container = document.getElementById('zonesList');
@@ -25,7 +25,7 @@ async function loadZones() {
         document.querySelectorAll('.delete-zone').forEach(b => b.addEventListener('click', async (e) => {
             if (!confirm('Delete zone?')) return;
             const id = e.currentTarget.dataset.id;
-            await fetch(`http://localhost:7070/api/delivery-zones/${id}`, { method: 'DELETE' });
+            await fetch(`/api/delivery-zones/${id}`, { method: 'DELETE' });
             loadZones();
         }));
         document.querySelectorAll('.edit-zone').forEach(b => b.addEventListener('click', (e) => {
@@ -64,10 +64,10 @@ async function handleAddZone(e) {
         const form = document.getElementById('addZoneForm');
         const editId = form.dataset.editId;
         if (editId) {
-            await fetch(`http://localhost:7070/api/delivery-zones/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ city, fee, min_days, max_days, is_active }) });
+            await fetch(`/api/delivery-zones/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ city, fee, min_days, max_days, is_active }) });
             delete form.dataset.editId;
         } else {
-            await fetch('http://localhost:7070/api/delivery-zones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ city, fee, min_days, max_days, is_active }) });
+            await fetch('/api/delivery-zones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ city, fee, min_days, max_days, is_active }) });
         }
         loadZones();
         form.reset();

@@ -4,7 +4,7 @@
  */
 
 class API {
-    constructor(baseURL = 'http://localhost:7070/api') {
+    constructor(baseURL = window.SHEMA_API_BASE_URL || '/api') {
         this.baseURL = baseURL;
     }
 

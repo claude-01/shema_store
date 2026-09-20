@@ -149,6 +149,26 @@ npm start
 
 The server will start on `http://localhost:3000`
 
+### Render Deployment
+
+Use `npm install` as the build command and `npm start` as the start command. Render supplies `PORT` automatically; do not hard-code it. Because the frontend and backend are served by the same service, browser API requests use same-origin paths such as `/api/products`.
+
+Set these Render environment variables:
+
+```text
+NODE_ENV=production
+DB_HOST=<your MySQL host>
+DB_PORT=3306
+DB_USER=<your MySQL user>
+DB_PASSWORD=<your MySQL password>
+DB_NAME=<your database name>
+SESSION_SECRET=<long random secret>
+JWT_SECRET=<long random secret>
+WHATSAPP_BUSINESS_NUMBER=<optional international number without +>
+```
+
+Leave `CORS_ORIGIN` empty for the combined deployment. Set it to the exact frontend origin only when the frontend is hosted separately.
+
 ## Usage
 
 ### Customer Website

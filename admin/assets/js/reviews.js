@@ -10,7 +10,7 @@ async function loadReviewsList() {
     try {
         const section = document.querySelector('.reviews-table');
         if (!section) return;
-        const response = await fetch('http://localhost:7070/api/reviews', { credentials: 'include' });
+        const response = await fetch('/api/reviews', { credentials: 'include' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Failed to load reviews');
         const reviews = data.reviews || [];

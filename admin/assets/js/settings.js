@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadSettings() {
     try {
-        const resp = await fetch('http://localhost:7070/api/settings');
+        const resp = await fetch('/api/settings');
         const settings = await resp.json();
         ['store_name', 'whatsapp_number', 'phone', 'email', 'address', 'description', 'opening_hours', 'delivery_info', 'logo_path'].forEach(field => {
             const input = document.getElementById(field);
@@ -48,7 +48,7 @@ async function handleStoreInfoUpdate(e) {
         const fields = ['store_name', 'whatsapp_number', 'phone', 'email', 'address', 'description', 'opening_hours', 'delivery_info', 'logo_path'];
         const payload = Object.fromEntries(fields.map(field => [field, document.getElementById(field)?.value || '']));
 
-        const resp = await fetch('http://localhost:7070/api/settings', {
+        const resp = await fetch('/api/settings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

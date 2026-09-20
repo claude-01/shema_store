@@ -38,7 +38,7 @@ async function loadCart() {
         const deliveryCity = localStorage.getItem('delivery_location') || 'Unknown';
         let shipping = 0; let est = '';
         try {
-            const resp = await fetch(`http://localhost:7070/api/delivery-zones`);
+            const resp = await fetch('/api/delivery-zones');
             const data = await resp.json();
             const zone = (data.zones || []).find(z => z.city === deliveryCity) || null;
             if (zone) {

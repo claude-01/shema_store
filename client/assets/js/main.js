@@ -510,7 +510,7 @@ async function openDeliveryChooser() {
     // fetch delivery zones
     let zones = [];
     try {
-        const resp = await fetch('http://localhost:7070/api/delivery-zones');
+        const resp = await fetch('/api/delivery-zones');
         const data = await resp.json();
         zones = data.zones || [];
     } catch (err) {

@@ -6,29 +6,62 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const path = require('path');
 const { requireAdmin } = require('./middleware/authMiddleware');
+const databaseConfig = require('./config/config').database;
 
 const app = express();
 
 // Middleware
-app.use(helmet()); // Security headers
-app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:7070',
-    credentials: true
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            'connect-src': ["'self'", 'https://nominatim.openstreetmap.org']
+        }
+    }
 }));
+const corsOrigins = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+if (corsOrigins.length) {
+    app.use(cors({
+        origin: (origin, callback) => {
+            if (!origin || corsOrigins.includes(origin)) return callback(null, true);
+            return callback(new Error('CORS origin is not allowed'));
+        },
+        credentials: true
+    }));
+}
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
+
+const sessionStore = new MySQLStore({
+    host: databaseConfig.host,
+    port: databaseConfig.port,
+    user: databaseConfig.user,
+    password: databaseConfig.password,
+    database: databaseConfig.database,
+    createDatabaseTable: true
+});
+
+const sessionSecret = process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'local-development-session-secret');
+if (!sessionSecret) throw new Error('SESSION_SECRET must be set in production');
+
 // Session configuration
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'change_this_secret',
+    store: sessionStore,
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: { 
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));

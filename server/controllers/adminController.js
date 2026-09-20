@@ -54,33 +54,30 @@ exports.updateAdminCredentials = async (req, res) => {
 
 exports.getDashboardOverview = async (req, res) => {
     try {
-        const queries = await Promise.all([
-            db.query('SELECT COALESCE(SUM(total_amount), 0) AS revenue, COUNT(*) AS orders FROM orders'),
-            db.query('SELECT COUNT(*) AS customers FROM users WHERE is_active = 1'),
-            db.query('SELECT COUNT(*) AS products, SUM(stock <= 5) AS low_stock FROM products WHERE is_active = 1'),
-            db.query("SELECT COUNT(*) AS pending_returns FROM orders WHERE status = 'cancelled'"),
-            db.query('SELECT id, customer_name, total_amount, status, created_at FROM orders ORDER BY created_at DESC LIMIT 8'),
-            db.query(`SELECT p.id, p.name, p.price, p.stock, c.name AS category_name,
+        const summary = await db.query('SELECT COALESCE(SUM(total_amount), 0) AS revenue, COUNT(*) AS orders FROM orders');
+        const customers = await db.query('SELECT COUNT(*) AS customers FROM users WHERE is_active = 1');
+        const products = await db.query('SELECT COUNT(*) AS products, SUM(stock <= 5) AS low_stock FROM products WHERE is_active = 1');
+        const returns = await db.query("SELECT COUNT(*) AS pending_returns FROM orders WHERE status = 'cancelled'");
+        const recentOrders = await db.query('SELECT id, customer_name, total_amount, status, created_at FROM orders ORDER BY created_at DESC LIMIT 8');
+        const topProducts = await db.query(`SELECT p.id, p.name, p.price, p.stock, c.name AS category_name,
                 COALESCE(SUM(oi.quantity), 0) AS units_sold,
                 COALESCE(SUM(oi.quantity * oi.price), 0) AS revenue,
                 (SELECT image_path FROM product_images pi WHERE pi.product_id = p.id AND pi.is_main = 1 LIMIT 1) AS image
                 FROM products p LEFT JOIN categories c ON c.id = p.category_id
                 LEFT JOIN order_items oi ON oi.product_id = p.id
                 GROUP BY p.id, p.name, p.price, p.stock, c.name
-                ORDER BY units_sold DESC LIMIT 5`),
-            db.query(`SELECT p.id, p.name, p.stock,
+                ORDER BY units_sold DESC LIMIT 5`);
+        const lowStock = await db.query(`SELECT p.id, p.name, p.stock,
                 (SELECT image_path FROM product_images pi WHERE pi.product_id = p.id AND pi.is_main = 1 LIMIT 1) AS image
-                FROM products p WHERE p.is_active = 1 AND p.stock <= 5 ORDER BY p.stock ASC LIMIT 6`),
-            db.query(`SELECT c.name AS category_name, COALESCE(SUM(oi.quantity * oi.price), 0) AS revenue
+                FROM products p WHERE p.is_active = 1 AND p.stock <= 5 ORDER BY p.stock ASC LIMIT 6`);
+        const categorySales = await db.query(`SELECT c.name AS category_name, COALESCE(SUM(oi.quantity * oi.price), 0) AS revenue
                 FROM categories c LEFT JOIN products p ON p.category_id = c.id
                 LEFT JOIN order_items oi ON oi.product_id = p.id
-                GROUP BY c.id, c.name ORDER BY revenue DESC`),
-            db.query(`SELECT DAYNAME(created_at) AS day, COALESCE(SUM(total_amount), 0) AS revenue, COUNT(*) AS orders
+                GROUP BY c.id, c.name ORDER BY revenue DESC`);
+        const salesTrend = await db.query(`SELECT DAYNAME(created_at) AS day, COALESCE(SUM(total_amount), 0) AS revenue, COUNT(*) AS orders
                 FROM orders WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-                GROUP BY DATE(created_at), DAYNAME(created_at) ORDER BY DATE(created_at)`)
-        ]);
+                GROUP BY DATE(created_at), DAYNAME(created_at) ORDER BY DATE(created_at)`);
 
-        const [summary, customers, products, returns, recentOrders, topProducts, lowStock, categorySales, salesTrend] = queries;
         return res.json({ success: true, summary: { ...summary[0], ...customers[0], ...products[0], ...returns[0] }, recentOrders, topProducts, lowStock, categorySales, salesTrend });
     } catch (error) {
         console.error('getDashboardOverview error:', error);

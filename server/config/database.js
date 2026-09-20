@@ -10,7 +10,7 @@ const databaseConfig = require('./config').database;
 const pool = mysql.createPool({
     ...databaseConfig,
     waitForConnections: true,
-    connectionLimit: 2,
+    connectionLimit: 1,
     queueLimit: 0,
     multipleStatements: false
 });
@@ -136,6 +136,97 @@ async function ensureDatabaseDefaults() {
                     color VARCHAR(50) NOT NULL,
                     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
                     UNIQUE KEY unique_product_color (product_id, color)
+                )
+            `);
+        }
+
+        if (!tableNames.includes('users')) {
+            await connection.query(`
+                CREATE TABLE users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    first_name VARCHAR(100) NOT NULL,
+                    last_name VARCHAR(100) NOT NULL,
+                    email VARCHAR(100) UNIQUE NOT NULL,
+                    phone VARCHAR(20),
+                    password VARCHAR(255) NOT NULL,
+                    address TEXT,
+                    city VARCHAR(50),
+                    country VARCHAR(50),
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_email (email)
+                )
+            `);
+        }
+
+        if (!tableNames.includes('orders')) {
+            await connection.query(`
+                CREATE TABLE orders (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NULL,
+                    customer_name VARCHAR(100) NOT NULL,
+                    customer_phone VARCHAR(20) NOT NULL,
+                    delivery_location TEXT NOT NULL,
+                    notes TEXT,
+                    total_amount DECIMAL(10, 2) NOT NULL,
+                    status ENUM('pending', 'processing', 'delivered', 'cancelled') DEFAULT 'pending',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+                    INDEX idx_user (user_id),
+                    INDEX idx_status (status)
+                )
+            `);
+        }
+
+        if (!tableNames.includes('order_items')) {
+            await connection.query(`
+                CREATE TABLE order_items (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    order_id INT NOT NULL,
+                    product_id INT NOT NULL,
+                    quantity INT NOT NULL,
+                    price DECIMAL(10, 2) NOT NULL,
+                    size VARCHAR(50),
+                    color VARCHAR(50),
+                    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+                    FOREIGN KEY (product_id) REFERENCES products(id),
+                    INDEX idx_order (order_id)
+                )
+            `);
+        }
+
+        if (!tableNames.includes('wishlists')) {
+            await connection.query(`
+                CREATE TABLE wishlists (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    product_id INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+                    UNIQUE KEY unique_wishlist (user_id, product_id),
+                    INDEX idx_user (user_id)
+                )
+            `);
+        }
+
+        if (!tableNames.includes('reviews')) {
+            await connection.query(`
+                CREATE TABLE reviews (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    product_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    rating INT,
+                    comment TEXT,
+                    is_approved BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    INDEX idx_product (product_id),
+                    INDEX idx_approved (is_approved)
                 )
             `);
         }

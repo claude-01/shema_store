@@ -66,6 +66,13 @@ function displayFallbackProduct() {
     if (sectionEl) {
         sectionEl.removeEventListener('click', productSectionClickHandler);
         sectionEl.addEventListener('click', productSectionClickHandler);
+        sectionEl.querySelectorAll('.product-thumbnail').forEach((thumbnail) => {
+            thumbnail.addEventListener('mouseenter', () => changeMainImage(thumbnail.dataset.src));
+            thumbnail.addEventListener('mouseleave', () => {
+                const selected = sectionEl.querySelector('.product-thumbnail.is-selected');
+                if (selected) changeMainImage(selected.dataset.src);
+            });
+        });
     }
 }
 
@@ -76,25 +83,34 @@ function displayProductDetails(product) {
     displayedProduct = product;
     const images = product.images && product.images.length ? product.images : [product.image || product.image_path || '/images/download.jpg'];
     const mainImage = images[0];
+    const sizes = Array.isArray(product.sizes) ? product.sizes : [];
 
     section.innerHTML = `
+        <nav class="product-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><a href="/products.html">Products</a><span>›</span><strong>${escapeProductText(product.name)}</strong></nav>
         <div class="product-detail-shell">
             <div class="product-gallery">
-                <img src="${resolveImagePath(mainImage)}" alt="${product.name}" class="product-main-image" onerror="this.onerror=null;this.src='/images/download.jpg'" />
-                <div class="product-thumbnails">
-                    ${images.map((img) => `
-                        <img src="${resolveImagePath(img)}" alt="${product.name}" class="product-thumbnail" data-src="${resolveImagePath(img)}" onerror="this.onerror=null;this.src='/images/download.jpg';this.dataset.src='/images/download.jpg'">
+                <div class="product-gallery-stage">
+                    <div class="product-thumbnails">
+                    ${images.map((img, index) => `
+                        <button type="button" class="product-thumbnail ${index === 0 ? 'is-selected' : ''}" data-src="${resolveImagePath(img)}" aria-label="View product color ${index + 1}">
+                            <img src="${resolveImagePath(img)}" alt="${product.name} color ${index + 1}" onerror="this.onerror=null;this.src='/images/download.jpg';this.closest('button').dataset.src='/images/download.jpg'">
+                        </button>
                     `).join('')}
+                    </div>
+                    <div class="product-main-image-wrap"><img src="${resolveImagePath(mainImage)}" alt="${product.name}" class="product-main-image" onerror="this.onerror=null;this.src='/images/download.jpg'" /><span class="product-variant-preview" aria-live="polite">Colour 1</span></div>
                 </div>
             </div>
             <div class="product-detail-copy">
-                <span class="eyebrow">Top pick</span>
+                <span class="product-brand">${escapeProductText(product.category_name || product.category || 'Shema Store')}</span>
                 <h1>${product.name}</h1>
+                <div class="product-rating-summary"><span class="rating-stars">★★★★★</span><a href="#product-reviews">Read customer reviews</a></div>
                 <div class="product-price-row">
                     <strong>${formatCurrency(product.price || 0)}</strong>
                     <span>${formatCurrency((product.price || 0) * 1.15)}</span>
                 </div>
                 <p>${product.description || 'High-quality product designed for everyday reliability and satisfaction.'}</p>
+                ${images.length > 1 ? `<div class="product-color-picker"><strong>Colour:</strong><span id="selectedColorLabel">Option 1</span><div class="product-color-options">${images.map((img, index) => `<button type="button" class="product-color-swatch ${index === 0 ? 'is-selected' : ''}" data-color-index="${index}" data-src="${resolveImagePath(img)}" aria-label="Choose colour ${index + 1}"><img src="${resolveImagePath(img)}" alt="Colour ${index + 1}"></button>`).join('')}</div></div>` : ''}
+                ${sizes.length ? `<div class="product-size-picker"><div class="size-picker-heading"><strong>Size:</strong><span id="selectedSizeLabel">Select a size</span></div><input type="hidden" id="productSize" value=""><div class="product-size-options">${sizes.map(size => `<button type="button" class="product-size-option" data-size="${escapeProductText(size.size || size)}">${escapeProductText(size.size || size)}</button>`).join('')}</div></div>` : ''}
                 <div class="product-meta-list">
                     <div><span>Category</span><strong>${product.category_name || product.category || 'General'}</strong></div>
                     <div><span>Stock</span><strong>${Number(product.stock || 0) > 0 ? `${product.stock} available` : 'Sold out'}</strong></div>
@@ -115,14 +131,56 @@ function displayProductDetails(product) {
     if (sectionEl) {
         sectionEl.removeEventListener('click', productSectionClickHandler);
         sectionEl.addEventListener('click', productSectionClickHandler);
+        sectionEl.querySelectorAll('.product-color-swatch').forEach((swatch) => {
+            const previewColor = () => {
+                const index = Number(swatch.dataset.colorIndex || 0);
+                const label = sectionEl.querySelector('#selectedColorLabel');
+                const overlay = sectionEl.querySelector('.product-variant-preview');
+                if (label) label.textContent = `Option ${index + 1}`;
+                if (overlay) overlay.textContent = `Colour ${index + 1}`;
+                changeMainImage(swatch.dataset.src);
+            };
+            swatch.addEventListener('mouseenter', previewColor);
+            swatch.addEventListener('focus', previewColor);
+            swatch.addEventListener('mouseleave', () => restoreSelectedColor(sectionEl));
+            swatch.addEventListener('blur', () => restoreSelectedColor(sectionEl));
+            swatch.addEventListener('click', () => {
+                sectionEl.querySelectorAll('.product-color-swatch').forEach(item => item.classList.remove('is-selected'));
+                swatch.classList.add('is-selected');
+                previewColor();
+            });
+        });
+        sectionEl.querySelectorAll('.product-size-option').forEach((option) => {
+            const previewSize = () => {
+                const label = sectionEl.querySelector('#selectedSizeLabel');
+                const overlay = sectionEl.querySelector('.product-variant-preview');
+                if (label) label.textContent = option.dataset.size || 'Select a size';
+                if (overlay) overlay.textContent = `Size ${option.dataset.size || ''}`;
+            };
+            option.addEventListener('mouseenter', previewSize);
+            option.addEventListener('focus', previewSize);
+            option.addEventListener('mouseleave', () => restoreSelectedSize(sectionEl));
+            option.addEventListener('blur', () => restoreSelectedSize(sectionEl));
+            option.addEventListener('click', () => {
+                sectionEl.querySelectorAll('.product-size-option').forEach(item => item.classList.remove('is-selected'));
+                option.classList.add('is-selected');
+                const input = sectionEl.querySelector('#productSize');
+                const label = sectionEl.querySelector('#selectedSizeLabel');
+                if (input) input.value = option.dataset.size || '';
+                if (label) label.textContent = option.dataset.size || 'Select a size';
+                const overlay = sectionEl.querySelector('.product-variant-preview');
+                if (overlay) overlay.textContent = `Size ${option.dataset.size || ''}`;
+            });
+        });
     }
 
 
 function productSectionClickHandler(e) {
     const btn = e.target.closest('button');
-    const img = e.target.closest('img.product-thumbnail');
-    if (img) {
-        const src = img.dataset.src;
+    if (btn?.classList.contains('product-thumbnail')) {
+        const src = btn.dataset.src;
+        document.querySelectorAll('.product-thumbnail').forEach(thumbnail => thumbnail.classList.remove('is-selected'));
+        btn.classList.add('is-selected');
         if (src) changeMainImage(src);
         return;
     }
@@ -135,6 +193,30 @@ function productSectionClickHandler(e) {
         addProductToWishlist();
     } else if (action === 'order-whatsapp') {
         orderOnWhatsApp();
+    }
+}
+
+function restoreSelectedColor(section) {
+    const selected = section.querySelector('.product-color-swatch.is-selected');
+    if (!selected) return;
+    changeMainImage(selected.dataset.src);
+    const index = Number(selected.dataset.colorIndex || 0);
+    const label = section.querySelector('#selectedColorLabel');
+    const overlay = section.querySelector('.product-variant-preview');
+    if (label) label.textContent = `Option ${index + 1}`;
+    if (overlay) overlay.textContent = `Colour ${index + 1}`;
+}
+
+function restoreSelectedSize(section) {
+    const selected = section.querySelector('.product-size-option.is-selected');
+    const label = section.querySelector('#selectedSizeLabel');
+    const overlay = section.querySelector('.product-variant-preview');
+    if (selected) {
+        if (label) label.textContent = selected.dataset.size || 'Select a size';
+        if (overlay) overlay.textContent = `Size ${selected.dataset.size || ''}`;
+    } else {
+        if (label) label.textContent = 'Select a size';
+        if (overlay) overlay.textContent = 'Choose a variant';
     }
 }
     // detect delivery city and update UI
@@ -254,7 +336,13 @@ function openQuickOrderModal(product) {
         lines.push('I would like to order:');
         lines.push('');
         lines.push(`Product: ${product.name}`);
+        const size = document.getElementById('productSize')?.value || '';
+        if (document.getElementById('productSize') && !size) {
+            alert('Please select a size');
+            return;
+        }
         lines.push(`Quantity: ${qty}`);
+        if (size) lines.push(`Size: ${size}`);
         lines.push(`Price: ${formatCurrency(product.price || 0)}`);
         lines.push('');
         const deliveryCity = localStorage.getItem('delivery_location') || 'Unknown';
@@ -288,14 +376,20 @@ async function addProductToCart() {
     try {
         const quantityInput = document.getElementById('quantityInput');
         const quantity = parseInt(quantityInput?.value || '1', 10) || 1;
+        const sizeInput = document.getElementById('productSize');
+        const size = sizeInput?.value || '';
+        if (sizeInput && !size) {
+            alert('Please select a size');
+            return;
+        }
         const raw = localStorage.getItem('shema_cart');
         const cart = raw ? JSON.parse(raw) : { items: [] };
         // check if item exists
-        const existing = cart.items.find(i => Number(i.productId) === Number(currentProductId));
+        const existing = cart.items.find(i => Number(i.productId) === Number(currentProductId) && (i.size || '') === size);
         if (existing) {
             existing.quantity = (existing.quantity || 0) + quantity;
         } else {
-            cart.items.push({ productId: Number(currentProductId), quantity });
+            cart.items.push({ productId: Number(currentProductId), quantity, size });
         }
         localStorage.setItem('shema_cart', JSON.stringify(cart));
         updateCartBadge();
@@ -304,6 +398,10 @@ async function addProductToCart() {
         showAlert('Error adding to cart', 'error');
         console.error(error);
     }
+}
+
+function escapeProductText(value) {
+    return String(value || '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
 }
 
 async function addProductToWishlist() {
@@ -336,7 +434,7 @@ function displayReviews(reviews) {
     const list = Array.isArray(reviews) ? reviews : [];
 
     const reviewsMarkup = `
-        <div class="container reviews-block">
+        <div id="product-reviews" class="container reviews-block">
             <div class="section-heading"><h2>Customer Reviews</h2><span>${list.length} review${list.length === 1 ? '' : 's'}</span></div>
             <div class="review-grid">
                 ${list.length ? list.map((review) => `
@@ -348,8 +446,7 @@ function displayReviews(reviews) {
             </div>
             <form id="productReviewForm" class="product-review-form">
                 <h3>Rate this product</h3>
-                <label for="reviewRating">Your rating</label>
-                <select id="reviewRating" required><option value="">Choose stars</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select>
+                <fieldset class="star-rating"><legend>Your rating</legend>${[5, 4, 3, 2, 1].map(value => `<input type="radio" id="reviewRating${value}" name="reviewRating" value="${value}" required><label for="reviewRating${value}" title="${value} star${value === 1 ? '' : 's'}">★</label>`).join('')}</fieldset>
                 <label for="reviewComment">Comment (optional)</label>
                 <textarea id="reviewComment" rows="3" maxlength="1000" placeholder="Share your experience"></textarea>
                 <button class="btn btn-primary" type="submit">Submit rating</button>
@@ -363,7 +460,7 @@ function displayReviews(reviews) {
 
 async function submitProductReview(event) {
     event.preventDefault();
-    const rating = document.getElementById('reviewRating')?.value;
+    const rating = document.querySelector('input[name="reviewRating"]:checked')?.value;
     const comment = document.getElementById('reviewComment')?.value || '';
     if (!rating) return showAlert('Choose a star rating first', 'error');
     try {

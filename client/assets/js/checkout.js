@@ -86,7 +86,7 @@ function generateWhatsAppMessage(orderData, cart) {
     
     message += `Products:\n`;
     cart.items.forEach(item => {
-        message += `${item.name} — ${item.quantity} × ${formatCurrency(item.price)}\n`;
+        message += `${item.name}${item.size ? ` (Size: ${item.size})` : ''} — ${item.quantity} × ${formatCurrency(item.price)}\n`;
     });
     
     message += `\nTotal: ${formatCurrency(cart.total)}\n\n`;

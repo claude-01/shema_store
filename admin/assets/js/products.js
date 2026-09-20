@@ -105,8 +105,9 @@ async function handleAddProduct(e) {
         const price = parseFloat(document.querySelector('#price').value) || 0;
         const stock = parseInt(document.querySelector('#stock').value, 10) || 0;
         const category_id = parseInt(document.querySelector('#category_id').value, 10) || 1;
-        const imageFile = document.querySelector('#imageFile')?.files[0];
-        if (!imageFile) {
+        const available_sizes = document.querySelector('#available_sizes')?.value || '';
+        const imageFiles = [...(document.querySelector('#imageFile')?.files || [])];
+        if (!imageFiles.length) {
             showAdminAlert('Please choose a product image', 'error');
             return;
         }
@@ -114,7 +115,7 @@ async function handleAddProduct(e) {
         const resp = await fetch(API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description, price, stock, category_id })
+            body: JSON.stringify({ name, description, price, stock, category_id, available_sizes })
         });
 
         const data = await resp.json();
@@ -125,7 +126,7 @@ async function handleAddProduct(e) {
 
         const created = data.product || data;
         const uploadData = new FormData();
-        uploadData.append('image', imageFile);
+        imageFiles.forEach(file => uploadData.append('images', file));
         uploadData.append('product_id', created.id);
         const imageResponse = await fetch('http://localhost:7070/api/images', { method: 'POST', body: uploadData });
         const imageData = await imageResponse.json();
@@ -154,6 +155,7 @@ async function loadProductForEdit() {
         ['name', 'description', 'price', 'stock', 'category_id', 'discount_percent'].forEach(field => {
             if (form.elements[field]) form.elements[field].value = product[field] ?? '';
         });
+        if (form.elements.available_sizes) form.elements.available_sizes.value = (product.sizes || []).map(size => size.size || size).join(', ');
         const currentImage = (data.images || []).find(image => image.is_main) || (data.images || [])[0];
         if (currentImage && form.elements.imageFile) {
             form.elements.imageFile.dataset.currentImage = currentImage.image_path;
@@ -167,6 +169,7 @@ async function loadProductForEdit() {
             event.preventDefault();
             const fields = ['name', 'description', 'price', 'stock', 'category_id'];
             const changes = Object.fromEntries(fields.map(field => [field, form.elements[field].value]));
+            changes.available_sizes = form.elements.available_sizes?.value || '';
             const updateResponse = await fetch(`http://localhost:7070/api/products/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -174,12 +177,13 @@ async function loadProductForEdit() {
             });
             const result = await updateResponse.json();
             if (!updateResponse.ok) throw new Error(result.message || 'Failed to update product');
-            const imageFile = form.elements.imageFile?.files[0];
-            if (imageFile) {
+            const imageFiles = [...(form.elements.imageFile?.files || [])];
+            if (imageFiles.length) {
                 const uploadData = new FormData();
-                uploadData.append('image', imageFile);
+                imageFiles.forEach(file => uploadData.append('images', file));
                 uploadData.append('product_id', id);
-                await fetch('http://localhost:7070/api/images', { method: 'POST', body: uploadData });
+                const imageResponse = await fetch('http://localhost:7070/api/images', { method: 'POST', body: uploadData });
+                if (!imageResponse.ok) throw new Error('Product image upload failed');
             }
             showAdminAlert('Product updated successfully', 'success');
             setTimeout(() => { window.location.href = 'products.html'; }, 800);
@@ -273,11 +277,15 @@ async function populateCategorySelect(selectedId = '') {
 if (window.location.pathname.includes('add-product.html')) {
     populateCategorySelect();
     document.querySelector('#imageFile')?.addEventListener('change', (event) => {
-        const file = event.target.files[0];
         const preview = document.querySelector('#imagePreview');
-        if (!file || !preview) return;
-        const reader = new FileReader();
-        reader.onload = () => { preview.innerHTML = `<img src="${reader.result}" alt="Selected product preview">`; };
-        reader.readAsDataURL(file);
+        if (!preview) return;
+        preview.innerHTML = '';
+        [...event.target.files].forEach(file => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                preview.insertAdjacentHTML('beforeend', `<img src="${reader.result}" alt="Selected product image preview">`);
+            };
+            reader.readAsDataURL(file);
+        });
     });
 }

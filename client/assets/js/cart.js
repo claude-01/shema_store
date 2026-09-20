@@ -23,11 +23,12 @@ async function loadCart() {
                     id: it.productId,
                     name: p.name || 'Product',
                     quantity: it.quantity || 1,
+                    size: it.size || '',
                     price: Number(p.price || 0),
                     image: (p.image || p.image_path) ? (p.image || p.image_path) : '/assets/images/placeholders/product.jpg'
                 };
             } catch (err) {
-                return { id: it.productId, name: 'Product', quantity: it.quantity || 1, price: 0, image: '/images/download.jpg' };
+                return { id: it.productId, name: 'Product', quantity: it.quantity || 1, size: it.size || '', price: 0, image: '/images/download.jpg' };
             }
         }));
 
@@ -74,6 +75,7 @@ function displayCart(cart) {
             <img src="${item.image}" alt="${item.name}" class="cart-item-image">
             <div class="cart-item-details">
                 <div class="cart-item-name">${item.name}</div>
+                ${item.size ? `<div class="cart-item-size">Size: ${item.size}</div>` : ''}
                 <div class="cart-item-price">${formatCurrency(item.price)}</div>
                 <div class="cart-item-quantity">
                     <button class="qty-btn" data-action="decrease" data-id="${item.id}" data-new="${item.quantity - 1}">-</button>

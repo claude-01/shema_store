@@ -99,6 +99,17 @@ img {
     align-items: center;
 }
 
+.reviews-table { background: #fff; border: 1px solid #e3e6e9; border-radius: 8px; padding: 20px; overflow-x: auto; }
+.admin-review-summary { color: #64748b; font-size: .9rem; margin-bottom: 16px; }
+.admin-reviews-heading { margin: 20px 0 12px; color: #20262d; font-size: 1.05rem; }
+.admin-review-stars { color: #f59e0b; font-size: 1.05rem; letter-spacing: 1px; white-space: nowrap; }
+.rating-number { display: block; color: #64748b; font-size: .72rem; margin-top: 3px; }
+.review-email { display: block; color: #64748b; font-size: .72rem; margin-top: 3px; }
+.review-status { display: inline-block; padding: 5px 9px; border-radius: 999px; font-size: .72rem; font-weight: 700; }
+.review-status.approved { background: #dcfce7; color: #166534; }
+.review-status.pending { background: #fef3c7; color: #92400e; }
+.admin-empty-state { padding: 40px 20px; color: #64748b; text-align: center; }
+
 /* Forms */
 .admin-form {
     background-color: white;

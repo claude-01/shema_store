@@ -31,8 +31,9 @@
                         <div class="admin-field"><label for="category_id">Category <span class="required-mark">*</span></label><select id="category_id" name="category_id" required><option value="">Loading categories...</option></select></div>
                         <div class="admin-field"><label for="price">Price</label><input type="number" id="price" name="price" step="0.01" required /></div>
                         <div class="admin-field"><label for="stock">Stock</label><input type="number" id="stock" name="stock" required /></div>
+                        <div class="admin-field"><label for="available_sizes">Sizes</label><input type="text" id="available_sizes" name="available_sizes" placeholder="S, M, L, XL or 38, 39, 40" /><small class="field-help">For clothes or shoes, separate sizes with commas.</small></div>
                         <div class="admin-field admin-field-wide"><label for="description">Description</label><textarea id="description" name="description"></textarea></div>
-                        <div class="admin-field admin-field-wide"><label for="imageFile">Product image</label><input type="file" id="imageFile" name="image" accept="image/jpeg,image/png,image/webp" required /><small class="field-help">Choose a JPG, PNG, or WEBP image from your device. Maximum size: 5MB.</small><div id="imagePreview" class="upload-preview"></div></div>
+                        <div class="admin-field admin-field-wide"><label for="imageFile">Product images and colors</label><input type="file" id="imageFile" name="images" accept="image/jpeg,image/png,image/webp" multiple required /><small class="field-help">Select as many images as you need, one for each color or view. JPG, PNG, or WEBP only. Maximum size: 5MB per image.</small><div id="imagePreview" class="upload-preview"></div></div>
                     </div>
                 </fieldset>
                 <button type="submit" class="btn btn-primary">Add Product</button>

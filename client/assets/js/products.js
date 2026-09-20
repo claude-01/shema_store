@@ -6,6 +6,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.startsWith('/category/')) return;
     loadProductsPage();
+    document.getElementById('productsSort')?.addEventListener('change', () => loadProducts(getActiveProductFilters()));
 });
 
 async function loadProductsPage() {
@@ -18,8 +19,21 @@ async function loadProductsPage() {
 
     const params = new URLSearchParams(window.location.search);
     const q = params.get('q') || '';
-    const filters = q ? { q } : {};
+    const category = params.get('category') || '';
+    const filters = { ...(q ? { q } : {}), ...(category ? { searchCategory: category } : {}) };
+    window.productSearchFilters = filters;
+    updateSearchResultsHeading(q, category);
     loadProducts(filters);
+}
+
+function updateSearchResultsHeading(query, category) {
+    const heading = document.querySelector('.products-results-heading h1');
+    const summary = document.getElementById('productsSummary');
+    if (!query || !heading) return;
+
+    const categoryLabel = category ? ` in ${category.replace(/-/g, ' ')}` : '';
+    heading.textContent = `Search results for “${query}”${categoryLabel}`;
+    if (summary) summary.textContent = 'Searching our catalogue…';
 }
 
 function buildSidebarHtml(categories) {
@@ -33,7 +47,7 @@ function buildSidebarHtml(categories) {
 
     return `
         <div class="sidebar-card">
-            <h3>Filter by</h3>
+            <div class="filter-heading"><h3>Filter by</h3><button type="button" class="clear-filters">Clear</button></div>
             <div class="filter-group">
                 <h4>Categories</h4>
                 ${items.map((category, index) => `
@@ -60,21 +74,60 @@ async function loadProducts(filters = {}) {
 
         container.innerHTML = '<div class="spinner"></div>';
 
-        let products = await api.getProducts(filters).catch(() => []);
+        let response;
+        if (filters.q) {
+            response = await api.searchProducts(filters.q).catch(() => []);
+        } else {
+            response = await api.getProducts(filters).catch(() => []);
+        }
+        let products = response;
         products = Array.isArray(products) ? products : products.products || [];
+        if (filters.searchCategory) {
+            const category = filters.searchCategory.toLowerCase();
+            products = products.filter((product) => [product.category, product.category_name, product.name, product.description]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase()
+                .includes(category));
+        }
+        products = sortProducts(products);
 
         if (products.length === 0) {
             container.innerHTML = '<div class="empty-state">No products found.</div>';
+            const summary = document.getElementById('productsSummary');
+            if (summary) summary.textContent = 'Try another product name or category.';
             return;
         }
 
         container.innerHTML = products.map(product => createProductCard(product)).join('');
+        const summary = document.getElementById('productsSummary');
+        if (summary) summary.textContent = `${products.length} product${products.length === 1 ? '' : 's'} available`;
         syncWishlistButtons();
         attachProductCardListeners();
     } catch (error) {
         console.error(error);
         showAlert('Error loading products', 'error');
     }
+}
+
+function getActiveProductFilters() {
+    const filters = { ...(window.productSearchFilters || {}) };
+    document.querySelectorAll('.sidebar input:checked').forEach((checkbox) => {
+        const name = checkbox.dataset.filter || checkbox.name;
+        if (!filters[name]) filters[name] = [];
+        filters[name].push(checkbox.value);
+    });
+    return filters;
+}
+
+function sortProducts(products) {
+    const sort = document.getElementById('productsSort')?.value || 'featured';
+    return [...products].sort((left, right) => {
+        if (sort === 'price-low') return Number(left.price || 0) - Number(right.price || 0);
+        if (sort === 'price-high') return Number(right.price || 0) - Number(left.price || 0);
+        if (sort === 'name') return String(left.name || '').localeCompare(String(right.name || ''));
+        return Number(right.is_featured || 0) - Number(left.is_featured || 0);
+    });
 }
 
 function createProductCard(product) {
@@ -140,14 +193,13 @@ function setupFilterListeners() {
     const filterElements = document.querySelectorAll('.sidebar input');
     filterElements.forEach((element) => {
         element.addEventListener('change', () => {
-            const filters = {};
-            document.querySelectorAll('.sidebar input:checked').forEach((checkbox) => {
-                const name = checkbox.dataset.filter || checkbox.name;
-                if (!filters[name]) filters[name] = [];
-                filters[name].push(checkbox.value);
-            });
-            loadProducts(filters);
+            loadProducts(getActiveProductFilters());
         });
+    });
+
+    document.querySelector('.clear-filters')?.addEventListener('click', () => {
+        document.querySelectorAll('.sidebar input').forEach(input => { input.checked = false; });
+        loadProducts(window.productSearchFilters || {});
     });
 }
 

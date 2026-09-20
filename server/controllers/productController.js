@@ -99,6 +99,11 @@ function addCategoryFields(product) {
     return product;
 }
 
+function parseSizes(value) {
+    if (Array.isArray(value)) return value.map(size => String(size).trim()).filter(Boolean);
+    return String(value || '').split(',').map(size => size.trim()).filter(Boolean);
+}
+
 exports.getAllProducts = async (req, res) => {
     try {
         const products = await db.query(`
@@ -138,6 +143,7 @@ exports.getProductById = async (req, res) => {
         }
 
         const product = products[0];
+        product.sizes = await db.query('SELECT id, size FROM product_sizes WHERE product_id = ? ORDER BY id ASC', [id]);
         let images = await db.query('SELECT id, image_path, is_main, order_position FROM product_images WHERE product_id = ? ORDER BY order_position ASC', [id]);
         images = (images || []).filter(image => imageExists(image.image_path));
         if (images.length === 0 && product && product.name) {
@@ -159,7 +165,7 @@ exports.getProductById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
     try {
-        const { category_id, name, description, price, stock, discount_percent, is_featured, is_best_seller, is_new_arrival } = req.body;
+        const { category_id, name, description, price, stock, available_sizes, discount_percent, is_featured, is_best_seller, is_new_arrival } = req.body;
 
         if (!category_id || !name) {
             return res.status(400).json({ success: false, message: 'Product name and category are required' });
@@ -171,6 +177,10 @@ exports.createProduct = async (req, res) => {
         );
 
         const inserted = await db.query('SELECT * FROM products WHERE id = ? LIMIT 1', [result.insertId]);
+        for (const size of parseSizes(available_sizes)) {
+            await db.query('INSERT INTO product_sizes (product_id, size) VALUES (?, ?)', [result.insertId, size]);
+        }
+        inserted[0].sizes = await db.query('SELECT id, size FROM product_sizes WHERE product_id = ? ORDER BY id ASC', [result.insertId]);
         return res.status(201).json({ success: true, product: inserted[0] });
     } catch (error) {
         console.error('createProduct error:', error);
@@ -184,14 +194,21 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const fields = req.body;
+        const { available_sizes, ...fields } = req.body;
 
         const setters = Object.keys(fields).map(k => `${k} = ?`).join(', ');
         const values = Object.values(fields);
         values.push(id);
 
-        await db.query(`UPDATE products SET ${setters} WHERE id = ?`, values);
+        if (setters) await db.query(`UPDATE products SET ${setters} WHERE id = ?`, values);
+        if (available_sizes !== undefined) {
+            await db.query('DELETE FROM product_sizes WHERE product_id = ?', [id]);
+            for (const size of parseSizes(available_sizes)) {
+                await db.query('INSERT INTO product_sizes (product_id, size) VALUES (?, ?)', [id, size]);
+            }
+        }
         const updated = await db.query('SELECT * FROM products WHERE id = ? LIMIT 1', [id]);
+        updated[0].sizes = await db.query('SELECT id, size FROM product_sizes WHERE product_id = ? ORDER BY id ASC', [id]);
         return res.json({ success: true, product: updated[0] });
     } catch (error) {
         console.error('updateProduct error:', error);
@@ -239,9 +256,9 @@ exports.searchProducts = async (req, res) => {
             ) AS image
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
-            WHERE p.name LIKE ? OR p.description LIKE ?
-            LIMIT 50
-        `, [`%${q}%`, `%${q}%`]);
+              WHERE p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?
+              LIMIT 50
+          `, [`%${q}%`, `%${q}%`, `%${q}%`]);
 
         return res.json({ success: true, products: products.map(addCategoryFields) });
     } catch (error) {

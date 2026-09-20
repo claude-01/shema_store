@@ -18,14 +18,29 @@
     <!-- Products Section -->
     <section class="products-section">
         <div class="container">
-            <!-- Sidebar with filters -->
             <aside class="sidebar">
-                <!-- To be implemented -->
+                <!-- Product filters are rendered here. -->
             </aside>
 
-            <!-- Products Grid -->
-            <main class="products-grid">
-                <!-- Product cards will be loaded here -->
+            <main class="products-results">
+                <div class="products-results-heading">
+                    <div>
+                        <nav class="products-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><strong>All products</strong></nav>
+                        <h1>Shop all products</h1>
+                        <p id="productsSummary">Browse our latest products and everyday essentials.</p>
+                    </div>
+                    <label class="products-sort">Sort by
+                        <select id="productsSort" aria-label="Sort products">
+                            <option value="featured">Featured</option>
+                            <option value="price-low">Price: low to high</option>
+                            <option value="price-high">Price: high to low</option>
+                            <option value="name">Name</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="products-grid">
+                    <!-- Product cards will be loaded here -->
+                </div>
             </main>
         </div>
     </section>

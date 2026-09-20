@@ -65,6 +65,7 @@ function initNavbar() {
                             <button type="submit" class="search-btn" aria-label="Search">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg><span>Search</span>
                             </button>
+                            <div id="searchSuggestions" class="search-suggestions" role="listbox" aria-label="Search suggestions"></div>
                         </div>
                 </form>
                 <div class="nav-quick-actions">
@@ -106,13 +107,15 @@ function initNavbar() {
 
     const siteSearchForm = document.getElementById('siteSearchForm');
     if (siteSearchForm) {
+        setupLiveSearch(siteSearchForm);
         siteSearchForm.addEventListener('submit', (event) => {
             event.preventDefault();
             const value = document.getElementById('siteSearchInput')?.value.trim();
             if (value) {
-                window.location.href = `/products.html?q=${encodeURIComponent(value)}`;
+                const category = document.getElementById('searchCategory')?.value;
+                showSearchResults(value, category);
             } else {
-                window.location.href = '/products.html';
+                document.getElementById('searchSuggestions')?.classList.remove('is-visible');
             }
         });
     }
@@ -129,7 +132,261 @@ function initNavbar() {
         });
     });
 
-    
+    if (!window.searchHistoryListenerAdded) {
+        window.searchHistoryListenerAdded = true;
+        window.addEventListener('popstate', () => {
+            const params = new URLSearchParams(window.location.search);
+            const query = params.get('search');
+            if (query) showSearchResults(query, params.get('searchCategory') || 'all', false);
+            else closeSearchResults();
+        });
+        const initialParams = new URLSearchParams(window.location.search);
+        if (initialParams.get('search')) {
+            showSearchResults(initialParams.get('search'), initialParams.get('searchCategory') || 'all', false);
+        }
+    }
+}
+
+function setupLiveSearch(form) {
+    const input = form.querySelector('#siteSearchInput');
+    const suggestions = form.querySelector('#searchSuggestions');
+    if (!input || !suggestions || typeof api === 'undefined') return;
+    const categorySelect = form.querySelector('#searchCategory');
+
+    let timer;
+    let requestId = 0;
+    let activeIndex = -1;
+    let catalogProducts = [];
+    let catalogLoaded = false;
+
+    const getCategoryMatches = (products) => {
+        const selectedCategory = categorySelect?.value || 'all';
+        if (selectedCategory === 'all' || selectedCategory === 'offers') return products;
+        return products.filter((product) => [product.category, product.category_name, product.name, product.description]
+            .filter(Boolean).join(' ').toLowerCase().includes(selectedCategory.toLowerCase()));
+    };
+
+    api.getProducts().then((response) => {
+        catalogProducts = Array.isArray(response) ? response : response.products || [];
+        catalogLoaded = true;
+    }).catch(() => {
+        catalogLoaded = false;
+    });
+
+    const searchAndRender = async (query) => {
+        const currentRequest = ++requestId;
+        suggestions.innerHTML = '<div class="search-loading">Finding related products...</div>';
+        suggestions.classList.add('is-visible');
+
+        if (catalogLoaded) {
+            const normalizedQuery = query.toLowerCase();
+            const localResults = getCategoryMatches(catalogProducts).filter((product) => {
+                const searchableText = [product.name, product.description, product.category_name, product.category]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase();
+                return searchableText.includes(normalizedQuery);
+            });
+            renderSuggestions(localResults, query);
+            return;
+        }
+
+        try {
+            const response = await api.searchProducts(query);
+            if (currentRequest !== requestId) return;
+            const products = Array.isArray(response) ? response : response.products || [];
+            renderSuggestions(products, query);
+        } catch (error) {
+            if (currentRequest !== requestId) return;
+            suggestions.innerHTML = '<div class="search-empty">Search is temporarily unavailable.</div>';
+            suggestions.classList.add('is-visible');
+        }
+    };
+
+    const closeSuggestions = () => {
+        suggestions.innerHTML = '';
+        suggestions.classList.remove('is-visible');
+        activeIndex = -1;
+    };
+
+    const renderSuggestions = (products, query) => {
+        if (!products.length) {
+            suggestions.innerHTML = `<div class="search-empty">No products found for “${escapeSearchText(query)}”</div>`;
+            suggestions.classList.add('is-visible');
+            return;
+        }
+
+        const title = query ? `Related products for “${escapeSearchText(query)}”` : 'Popular products';
+        suggestions.innerHTML = `<div class="search-suggestions-title">${title}</div>` + products.slice(0, 10).map((product, index) => `
+            <a class="search-suggestion" href="/product/${product.id}" role="option" data-index="${index}">
+                <img src="${resolveSearchImage(product.image || product.image_path)}" alt="" onerror="this.onerror=null;this.src='/images/download.jpg'">
+                <span class="search-suggestion-copy"><strong>${escapeSearchText(product.name)}</strong><small>${formatSearchCurrency(product.price)}</small></span>
+                <span class="search-suggestion-arrow" aria-hidden="true">›</span>
+            </a>
+        `).join('') + (query ? '<button type="button" class="search-see-all">View all search results</button>' : '');
+        suggestions.classList.add('is-visible');
+        suggestions.querySelector('.search-see-all')?.addEventListener('click', () => {
+            showSearchResults(query, categorySelect?.value || 'all');
+        });
+    };
+
+    const showPopularProducts = async () => {
+        if (catalogLoaded) {
+            const popular = getCategoryMatches(catalogProducts)
+                .sort((left, right) => Number(right.is_featured || 0) - Number(left.is_featured || 0));
+            renderSuggestions(popular, '');
+            return;
+        }
+
+        suggestions.innerHTML = '<div class="search-loading">Loading products...</div>';
+        suggestions.classList.add('is-visible');
+        try {
+            const response = await api.getProducts();
+            catalogProducts = Array.isArray(response) ? response : response.products || [];
+            catalogLoaded = true;
+            renderSuggestions(getCategoryMatches(catalogProducts), '');
+        } catch (error) {
+            suggestions.innerHTML = '<div class="search-empty">Products are temporarily unavailable.</div>';
+            suggestions.classList.add('is-visible');
+        }
+    };
+
+    input.addEventListener('input', () => {
+        const query = input.value.trim();
+        window.clearTimeout(timer);
+        if (query.length < 1) {
+            closeSuggestions();
+            return;
+        }
+
+        suggestions.innerHTML = '<div class="search-loading">Finding related products...</div>';
+        suggestions.classList.add('is-visible');
+        timer = window.setTimeout(async () => {
+            await searchAndRender(query);
+        }, 220);
+    });
+
+    input.addEventListener('focus', () => {
+        if (!input.value.trim()) showPopularProducts();
+    });
+
+    categorySelect?.addEventListener('change', () => {
+        if (input.value.trim()) {
+            searchAndRender(input.value.trim());
+        } else {
+            showPopularProducts();
+        }
+    });
+
+    form.addEventListener('show-search-results', (event) => {
+        window.clearTimeout(timer);
+        searchAndRender(event.detail.query);
+    });
+
+    input.addEventListener('keydown', (event) => {
+        const options = [...suggestions.querySelectorAll('.search-suggestion')];
+        if (!suggestions.classList.contains('is-visible') || !options.length) return;
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            activeIndex = event.key === 'ArrowDown'
+                ? (activeIndex + 1) % options.length
+                : (activeIndex - 1 + options.length) % options.length;
+            options.forEach((option, index) => option.classList.toggle('is-active', index === activeIndex));
+        } else if (event.key === 'Enter' && activeIndex >= 0) {
+            event.preventDefault();
+            options[activeIndex].click();
+        } else if (event.key === 'Escape') {
+            closeSuggestions();
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!form.contains(event.target)) closeSuggestions();
+    });
+}
+
+async function showSearchResults(query, category = 'all', updateHistory = true) {
+    const cleanQuery = String(query || '').trim();
+    if (!cleanQuery || typeof api === 'undefined') return;
+
+    let panel = document.getElementById('searchResultsPanel');
+    if (!panel) {
+        panel = document.createElement('section');
+        panel.id = 'searchResultsPanel';
+        panel.className = 'search-results-panel';
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        document.body.appendChild(panel);
+    }
+
+    panel.innerHTML = `
+        <div class="search-results-backdrop" data-close-search></div>
+        <div class="search-results-sheet">
+            <div class="search-results-header">
+                <div><p>SEARCH RESULTS</p><h2>Results for “${escapeSearchText(cleanQuery)}”</h2></div>
+                <button type="button" class="search-results-close" data-close-search aria-label="Close search results">×</button>
+            </div>
+            <div class="search-results-content"><div class="spinner"></div></div>
+        </div>`;
+    panel.classList.add('is-open');
+    document.body.classList.add('search-results-open');
+    panel.querySelectorAll('[data-close-search]').forEach((button) => button.addEventListener('click', () => closeSearchResults(true)));
+
+    if (updateHistory) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('search', cleanQuery);
+        if (category && category !== 'all' && category !== 'offers') params.set('searchCategory', category);
+        else params.delete('searchCategory');
+        window.history.pushState({ search: cleanQuery }, '', `${window.location.pathname}?${params.toString()}`);
+    }
+
+    try {
+        const response = await api.searchProducts(cleanQuery);
+        let products = Array.isArray(response) ? response : response.products || [];
+        if (category && category !== 'all' && category !== 'offers') {
+            const categoryName = category.toLowerCase();
+            products = products.filter((product) => [product.category, product.category_name, product.name, product.description]
+                .filter(Boolean).join(' ').toLowerCase().includes(categoryName));
+        }
+        if (!panel.classList.contains('is-open')) return;
+        const content = panel.querySelector('.search-results-content');
+        content.innerHTML = products.length ? `
+            <p class="search-results-count">${products.length} product${products.length === 1 ? '' : 's'} found</p>
+            <div class="search-results-grid">${products.map((product) => `
+                <a class="search-result-card" href="/product/${product.id}">
+                    <img src="${resolveSearchImage(product.image || product.image_path)}" alt="${escapeSearchText(product.name)}" onerror="this.onerror=null;this.src='/images/download.jpg'">
+                    <span><strong>${escapeSearchText(product.name)}</strong><small>${formatSearchCurrency(product.price)}</small></span>
+                </a>`).join('')}</div>` : '<div class="search-results-empty"><h3>No products found</h3><p>Try another product, brand, or category.</p></div>';
+    } catch (error) {
+        const content = panel.querySelector('.search-results-content');
+        if (content) content.innerHTML = '<div class="search-results-empty"><h3>Search is unavailable</h3><p>Please try again in a moment.</p></div>';
+    }
+}
+
+function closeSearchResults(removeSearchFromUrl = false) {
+    document.getElementById('searchResultsPanel')?.classList.remove('is-open');
+    document.body.classList.remove('search-results-open');
+    if (removeSearchFromUrl) {
+        const params = new URLSearchParams(window.location.search);
+        params.delete('search');
+        params.delete('searchCategory');
+        const query = params.toString();
+        window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+    }
+}
+
+function resolveSearchImage(imagePath) {
+    if (!imagePath) return '/images/download.jpg';
+    if (/^(https?:\/\/|data:)/i.test(imagePath) || imagePath.startsWith('/')) return imagePath;
+    return imagePath.includes('/') ? `/${imagePath}` : `/images/${encodeURIComponent(imagePath)}`;
+}
+
+function formatSearchCurrency(amount) {
+    return new Intl.NumberFormat('en-RW', { style: 'currency', currency: 'RWF', maximumFractionDigits: 0 }).format(Number(amount || 0));
+}
+
+function escapeSearchText(value) {
+    return String(value || '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
 }
 
 // Detect user's OS and browser for diagnostics and adaptions

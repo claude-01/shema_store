@@ -48,7 +48,10 @@ const sessionStore = new MySQLStore({
     password: databaseConfig.password,
     database: databaseConfig.database,
     ssl: databaseConfig.ssl,
-    createDatabaseTable: true
+    createDatabaseTable: true,
+    connectionLimit: 1,
+    waitForConnections: true,
+    queueLimit: 0
 });
 
 const sessionSecret = process.env.SESSION_SECRET || (

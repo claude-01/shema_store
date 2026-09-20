@@ -7,6 +7,20 @@ const fs = require('fs');
 const path = require('path');
 
 const IMAGES_DIR = path.join(__dirname, '..', '..', 'images');
+const PRODUCT_LIST_CACHE_TTL_MS = 60 * 1000;
+let productListCache = { expiresAt: 0, value: null };
+
+function getCachedProductList() {
+    return Date.now() < productListCache.expiresAt ? productListCache.value : null;
+}
+
+function setProductListCache(value) {
+    productListCache = { expiresAt: Date.now() + PRODUCT_LIST_CACHE_TTL_MS, value };
+}
+
+function invalidateProductListCache() {
+    productListCache = { expiresAt: 0, value: null };
+}
 
 function listProjectImages() {
     try {
@@ -164,13 +178,21 @@ function mergeDuplicateVariants(products) {
 
 exports.getAllProducts = async (req, res) => {
     try {
+        const includeInactive = req.query.includeInactive === 'true' || Boolean(req.session && req.session.adminId);
+
+        const cacheKey = includeInactive ? 'all' : 'active';
+        const cachedResult = getCachedProductList();
+        if (cachedResult && cacheKey === 'active') {
+            return res.json({ success: true, products: cachedResult });
+        }
+
         const products = await db.query(`
             SELECT p.*, c.name AS category_name, (
                 SELECT image_path FROM product_images pi WHERE pi.product_id = p.id AND pi.is_main = 1 LIMIT 1
             ) AS image
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
-            WHERE p.is_active = 1
+            ${includeInactive ? '' : 'WHERE p.is_active = 1'}
             ORDER BY p.created_at DESC
         `);
 
@@ -184,7 +206,11 @@ exports.getAllProducts = async (req, res) => {
             return addCategoryFields(p);
         });
 
-        return res.json({ success: true, products: mergeDuplicateVariants(mapped) });
+        const result = mergeDuplicateVariants(mapped);
+        if (!includeInactive) {
+            setProductListCache(result);
+        }
+        return res.json({ success: true, products: result });
     } catch (error) {
         console.error('getAllProducts error:', error);
         return res.status(500).json({ success: false, message: 'Failed to fetch products' });
@@ -238,6 +264,7 @@ exports.createProduct = async (req, res) => {
             await db.query('INSERT INTO product_sizes (product_id, size) VALUES (?, ?)', [result.insertId, size]);
         }
         inserted[0].sizes = await db.query('SELECT id, size FROM product_sizes WHERE product_id = ? ORDER BY id ASC', [result.insertId]);
+        invalidateProductListCache();
         return res.status(201).json({ success: true, product: inserted[0] });
     } catch (error) {
         console.error('createProduct error:', error);
@@ -266,6 +293,7 @@ exports.updateProduct = async (req, res) => {
         }
         const updated = await db.query('SELECT * FROM products WHERE id = ? LIMIT 1', [id]);
         updated[0].sizes = await db.query('SELECT id, size FROM product_sizes WHERE product_id = ? ORDER BY id ASC', [id]);
+        invalidateProductListCache();
         return res.json({ success: true, product: updated[0] });
     } catch (error) {
         console.error('updateProduct error:', error);
@@ -277,6 +305,7 @@ exports.deleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
         await db.query('DELETE FROM products WHERE id = ?', [id]);
+        invalidateProductListCache();
         return res.json({ success: true, message: 'Product deleted' });
     } catch (error) {
         console.error('deleteProduct error:', error);
@@ -294,6 +323,7 @@ exports.addProductImage = async (req, res) => {
         }
 
         await db.query('INSERT INTO product_images (product_id, image_path, is_main, order_position) VALUES (?, ?, ?, 0)', [id, image_path, is_main ? 1 : 0]);
+        invalidateProductListCache();
 
         return res.json({ success: true, message: 'Image added' });
     } catch (error) {

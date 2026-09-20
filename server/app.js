@@ -3,6 +3,7 @@
  */
 
 const express = require('express');
+const compression = require('compression');
 const cors = require('cors');
 const helmet = require('helmet');
 const session = require('express-session');
@@ -13,6 +14,11 @@ const { requireAdmin } = require('./middleware/authMiddleware');
 const databaseConfig = require('./config/config').database;
 
 const app = express();
+
+app.use(compression({
+    level: 6,
+    threshold: 1024
+}));
 
 // Middleware
 app.use(helmet({
@@ -38,6 +44,13 @@ if (corsOrigins.length) {
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+app.use((req, res, next) => {
+    if (req.method === 'GET' && /^\/api\/(products|categories|settings|reviews|delivery-zones)(?:\/|$)/.test(req.path)) {
+        res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    }
+    next();
+});
 
 if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
@@ -78,16 +91,32 @@ app.use(session({
 }));
 
 // Static files
-app.use(express.static(path.join(__dirname, '../client')));
+app.use(express.static(path.join(__dirname, '../client'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+}));
 app.use('/admin', (req, res, next) => {
     const publicAdminAsset = req.path === '/login.html' || req.path.startsWith('/assets/');
     if (publicAdminAsset || (req.session && req.session.adminId)) return next();
     return res.redirect('/admin/login.html');
-}, express.static(path.join(__dirname, '../admin')));
+}, express.static(path.join(__dirname, '../admin'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+}));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '../admin/dashboard.html')));
 app.get('/admin/', (req, res) => res.sendFile(path.join(__dirname, '../admin/dashboard.html')));
-app.use('/images', express.static(path.join(__dirname, '../images')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/images', express.static(path.join(__dirname, '../images'), {
+    maxAge: '7d',
+    etag: true,
+    lastModified: true
+}));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '7d',
+    etag: true,
+    lastModified: true
+}));
 
 app.get('/category/:slug', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/category.html'));

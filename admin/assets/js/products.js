@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadProductsList() {
     try {
         // Use the same live catalog endpoint as the customer products page.
-        const resp = await fetch(`/api/products?_=${Date.now()}`, {
+        const resp = await fetch(`/api/products?includeInactive=true&_=${Date.now()}`, {
             credentials: 'include',
             cache: 'no-store'
         });

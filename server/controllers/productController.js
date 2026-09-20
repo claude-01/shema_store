@@ -25,7 +25,7 @@ function invalidateProductListCache() {
 function listProjectImages() {
     try {
         if (!fs.existsSync(IMAGES_DIR)) return [];
-        return fs.readdirSync(IMAGES_DIR).filter(f => /\.(jpe?g|png|gif|webp)$/i.test(f));
+        return fs.readdirSync(IMAGES_DIR).filter(f => /\.(jpe?g|png|gif|webp|avif)$/i.test(f));
     } catch (err) {
         console.error('listProjectImages error', err);
         return [];
@@ -34,28 +34,43 @@ function listProjectImages() {
 
 function findImageForProduct(name) {
     if (!name) return null;
+
     const imgs = listProjectImages();
     if (!imgs || imgs.length === 0) return null;
 
-    const n = name.toLowerCase();
-    // token priorities
-    const tokens = n.split(/[^a-z0-9]+/).filter(Boolean).slice(0, 6);
+    const productName = String(name).toLowerCase();
+    const tokens = productName.split(/[^a-z0-9]+/).filter(Boolean).slice(0, 8);
 
-    // check for direct token matches
-    for (const t of tokens) {
-        const found = imgs.find(f => f.toLowerCase().includes(t));
+    for (const token of tokens) {
+        const found = imgs.find(file => file.toLowerCase().includes(token));
         if (found) return `/images/${encodeURI(found)}`;
     }
 
-    // fallback heuristics
-    const heuristics = ['phone', 'mobile', 'smart', 'laptop', 'tv', 'television', 'shoe', 'shoes', 'watch', 'bag', 'backpack', 'school', 'jampa'];
-    for (const h of heuristics) {
-        const found = imgs.find(f => f.toLowerCase().includes(h));
-        if (found) return `/images/${encodeURI(found)}`;
+    const synonymGroups = [
+        ['phone', 'iphone', 'mobile', 'pixel', 'galaxy', 'poco', 'xiaomi'],
+        ['laptop', 'computer', 'notebook'],
+        ['watch', 'smartwatch'],
+        ['shoe', 'sneaker', 'boot'],
+        ['bag', 'backpack', 'school'],
+        ['speaker', 'audio', 'wifi'],
+        ['camera', 'webcam'],
+        ['skincare', 'beauty', 'nivea', 'cream', 'cosmetic'],
+        ['kitchen', 'fryer', 'blender', 'pressure cooker', 'storage'],
+        ['sport', 'fitness', 'trail', 'running', 'gym']
+    ];
+
+    for (const group of synonymGroups) {
+        if (!tokens.some(token => group.some(keyword => token === keyword || productName.includes(keyword)))) {
+            continue;
+        }
+
+        for (const keyword of group) {
+            const found = imgs.find(file => file.toLowerCase().includes(keyword));
+            if (found) return `/images/${encodeURI(found)}`;
+        }
     }
 
-    // return first image as last resort
-    return imgs.length ? `/images/${encodeURI(imgs[0])}` : null;
+    return null;
 }
 
 function imageExists(imagePath) {

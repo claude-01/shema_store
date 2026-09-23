@@ -127,7 +127,11 @@ class API {
      * Get all products
      */
     getProducts(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const normalized = { ...params };
+        if (normalized.includeInactive === undefined) {
+            normalized.includeInactive = 'true';
+        }
+        const query = new URLSearchParams(normalized).toString();
         return this.get(`/products?${query}`);
     }
 

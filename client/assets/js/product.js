@@ -269,96 +269,54 @@ function resolveImagePath(img) {
 }
 
 function orderOnWhatsApp() {
-    // open quick order modal for the currently displayed product
-    const prod = displayedProduct || { id: currentProductId, name: document.querySelector('.product-detail-copy h1')?.textContent || 'product', price: 0 };
+    const prod = displayedProduct || {
+        id: currentProductId,
+        name: document.querySelector('.product-detail-copy h1')?.textContent || 'product',
+        price: 0
+    };
     openQuickOrderModal(prod);
 }
 
-function openQuickOrderModal(product) {
-    const existing = document.getElementById('quickOrderModal'); if (existing) existing.remove();
-    const modal = document.createElement('div');
-    modal.id = 'quickOrderModal';
-    modal.innerHTML = `
-        <div class="modal-overlay" style="position:fixed;inset:0;background:rgba(15,23,42,0.52);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;">
-            <div class="modal" style="background:#fff;border-radius:22px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(15,23,42,0.22);padding:24px 22px 18px; border:1px solid rgba(148,163,184,0.24); font-family: Arial, Helvetica, sans-serif;">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;">
-                    <div>
-                        <p style="margin:0;color:#a16207;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Quick order</p>
-                        <h3 style="margin:6px 0 0;font-size:24px;line-height:1.2;color:#111827;font-weight:800;">Order ${product.name}</h3>
-                    </div>
-                    <button id="qoClose" type="button" aria-label="Close" style="width:38px;height:38px;border-radius:12px;border:1px solid #e5e7eb;background:#f8fafc;color:#374151;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
-                </div>
+async function openQuickOrderModal(product) {
+    const settings = await api.getStoreSettings().catch(() => ({}));
+    const number = formatWhatsAppNumber(settings?.whatsapp_number || window.storeSettings?.whatsapp_number || '0793087491');
+    if (!number) {
+        alert('WhatsApp number not configured');
+        return;
+    }
 
-                <div style="display:grid;gap:16px;">
-                    <div>
-                        <label style="display:block;margin:0 0 8px;font-size:15px;font-weight:700;color:#374151;">Quantity</label>
-                        <input id="qoQuantity" type="number" value="1" min="1" style="width:100%;height:46px;border:1px solid #d1d5db;border-radius:12px;padding:0 14px;font-size:16px;color:#111827;background:#fff;outline:none;box-shadow:none;transition:border-color .2s ease;" />
-                    </div>
+    const currentUser = window.currentUser || null;
+    const firstName = currentUser?.first_name || currentUser?.firstName || '';
+    const lastName = currentUser?.last_name || currentUser?.lastName || '';
+    const customerName = [firstName, lastName].filter(Boolean).join(' ') || 'Customer';
+    const deliveryLocation = localStorage.getItem('delivery_location') || localStorage.getItem('delivery_city') || 'Unknown';
+    const selectedSize = document.getElementById('productSize')?.value || '';
 
-                    <div>
-                        <label style="display:block;margin:0 0 8px;font-size:15px;font-weight:700;color:#374151;">Name (optional)</label>
-                        <input id="qoName" type="text" style="width:100%;height:46px;border:1px solid #d1d5db;border-radius:12px;padding:0 14px;font-size:16px;color:#111827;background:#fff;outline:none;" />
-                    </div>
+    if (document.getElementById('productSize') && !selectedSize) {
+        alert('Please select a size');
+        return;
+    }
 
-                    <div>
-                        <label style="display:block;margin:0 0 8px;font-size:15px;font-weight:700;color:#374151;">Phone (optional)</label>
-                        <input id="qoPhone" type="text" placeholder="+250..." style="width:100%;height:46px;border:1px solid #d1d5db;border-radius:12px;padding:0 14px;font-size:16px;color:#111827;background:#fff;outline:none;" />
-                    </div>
+    const lines = [];
+    lines.push(`Hello ${settings?.store_name || settings?.name || 'SHEMA STORE'} 👋`);
+    lines.push('');
+    lines.push('I would like to order:');
+    lines.push('');
+    lines.push(`Product: ${product.name}`);
+    if (selectedSize) lines.push(`Size: ${selectedSize}`);
+    lines.push(`Quantity: 1`);
+    lines.push(`Price: ${formatCurrency(product.price || 0)}`);
+    lines.push('');
+    lines.push(`📍 Delivery location: ${deliveryLocation}`);
+    if (currentUser?.phone) lines.push(`Phone: ${currentUser.phone}`);
+    if (customerName && customerName !== 'Customer') lines.push(`Customer: ${customerName}`);
+    lines.push('');
+    lines.push('Please confirm availability and delivery details.');
+    lines.push('Thank you.');
 
-                    <div>
-                        <label style="display:block;margin:0 0 8px;font-size:15px;font-weight:700;color:#374151;">Delivery address (optional)</label>
-                        <input id="qoAddress" type="text" style="width:100%;height:46px;border:1px solid #d1d5db;border-radius:12px;padding:0 14px;font-size:16px;color:#111827;background:#fff;outline:none;" />
-                    </div>
-                </div>
-
-                <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:22px;">
-                    <button id="qoCancel" type="button" class="btn btn-secondary" style="min-width:120px;height:48px;border-radius:12px;font-weight:700;background:#f3f4f6;color:#111827;border:1px solid #d1d5db;">Cancel</button>
-                    <button id="qoContinue" type="button" class="btn btn-whatsapp" style="min-width:210px;height:48px;border-radius:12px;font-weight:700;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 10px 18px rgba(34,197,94,0.24);">Continue to WhatsApp</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    document.getElementById('qoCancel')?.addEventListener('click', () => modal.remove());
-    document.getElementById('qoClose')?.addEventListener('click', () => modal.remove());
-    document.getElementById('qoContinue')?.addEventListener('click', async () => {
-        const qty = parseInt(document.getElementById('qoQuantity')?.value || '1', 10) || 1;
-        const name = document.getElementById('qoName')?.value || '';
-        const phone = document.getElementById('qoPhone')?.value || '';
-        const address = document.getElementById('qoAddress')?.value || '';
-        // build message
-        const settings = await api.getStoreSettings().catch(() => ({}));
-        const number = formatWhatsAppNumber(settings?.whatsapp_number || window.storeSettings?.whatsapp_number || '0793087491');
-        if (!number) { alert('WhatsApp number not configured'); return; }
-        const lines = [];
-        lines.push('Hello 👋');
-        lines.push('');
-        lines.push('I would like to order:');
-        lines.push('');
-        lines.push(`Product: ${product.name}`);
-        const size = document.getElementById('productSize')?.value || '';
-        if (document.getElementById('productSize') && !size) {
-            alert('Please select a size');
-            return;
-        }
-        lines.push(`Quantity: ${qty}`);
-        if (size) lines.push(`Size: ${size}`);
-        lines.push(`Price: ${formatCurrency(product.price || 0)}`);
-        lines.push('');
-        const deliveryCity = localStorage.getItem('delivery_location') || 'Unknown';
-        lines.push(`📍 Delivery location: ${deliveryCity}`);
-        if (address) lines.push(`Address: ${address}`);
-        if (name) lines.push(`Name: ${name}`);
-        if (phone) lines.push(`Phone: ${phone}`);
-        lines.push('');
-        lines.push('Please confirm availability and delivery details.');
-        lines.push('Thank you.');
-
-        const message = encodeURIComponent(lines.join('\n'));
-        const url = `https://wa.me/${number}?text=${message}`;
-        window.open(url, '_blank');
-        modal.remove();
-    });
+    const message = encodeURIComponent(lines.join('\n'));
+    const url = `https://wa.me/${number}?text=${message}`;
+    window.open(url, '_blank');
 }
 
 function formatWhatsAppNumber(value) {

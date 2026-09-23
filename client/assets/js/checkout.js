@@ -3,120 +3,67 @@
  * Handle checkout process and WhatsApp integration
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (!isLoggedIn()) {
         redirectToLogin();
         return;
     }
 
-    loadCheckoutData();
-    attachCheckoutFormListeners();
+    try {
+        const cart = await api.getCart().catch(() => ({ items: [] }));
+        const user = await api.getCurrentUser().catch(() => ({ user: null }));
+        const currentUser = user?.user || user || null;
+        const customerName = [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(' ') || 'Customer';
+        const deliveryLocation = localStorage.getItem('delivery_location') || localStorage.getItem('delivery_city') || 'Not specified';
+        const settings = await api.getStoreSettings().catch(() => ({}));
+        const number = formatWhatsAppNumber(settings?.whatsapp_number || window.storeSettings?.whatsapp_number || '0793087491');
+
+        if (!number) {
+            showAlert('WhatsApp number not configured', 'error');
+            return;
+        }
+
+        const lines = [];
+        lines.push(`Hello ${settings?.store_name || settings?.name || 'SHEMA STORE'} 👋`);
+        lines.push('');
+        lines.push('I would like to place an order.');
+        lines.push('');
+        lines.push('🛒 ORDER DETAILS');
+        lines.push('');
+
+        (cart.items || []).forEach((item, index) => {
+            const itemName = item.name || `Item ${index + 1}`;
+            const qty = item.quantity || 1;
+            const price = Number(item.price || 0);
+            lines.push(`${index + 1}. ${itemName}`);
+            lines.push(`Quantity: ${qty}`);
+            lines.push(`Price: ${formatCurrency(price)}${qty > 1 ? ' each' : ''}`);
+            lines.push('');
+        });
+
+        lines.push('--------------------');
+        lines.push(`Subtotal: ${formatCurrency(cart.subtotal || cart.total || 0)}`);
+        if (Number(cart.shipping || 0) > 0) {
+            lines.push(`Shipping: ${formatCurrency(cart.shipping)}`);
+        }
+        lines.push(`Total: ${formatCurrency(cart.total || cart.subtotal || 0)}`);
+        lines.push('');
+        lines.push('📍 DELIVERY');
+        lines.push(`Location: ${deliveryLocation}`);
+        if (currentUser?.phone) lines.push(`Phone: ${currentUser.phone}`);
+        if (customerName && customerName !== 'Customer') lines.push(`Customer: ${customerName}`);
+        lines.push('');
+        lines.push('Please confirm availability and delivery time.');
+        lines.push('Thank you.');
+
+        const whatsappURL = `https://wa.me/${number}?text=${encodeURIComponent(lines.join('\n'))}`;
+        window.open(whatsappURL, '_blank');
+        showAlert('Opening WhatsApp order chat...', 'success');
+    } catch (error) {
+        showAlert('Error preparing checkout', 'error');
+        console.error(error);
+    }
 });
-
-/**
- * Load checkout data
- */
-async function loadCheckoutData() {
-    try {
-        const cart = await api.getCart();
-        const user = await api.getCurrentUser();
-        displayCheckoutForm(user, cart);
-    } catch (error) {
-        showAlert('Error loading checkout', 'error');
-        console.error(error);
-    }
-}
-
-/**
- * Display checkout form
- */
-function displayCheckoutForm(user, cart) {
-    // To be implemented
-    console.log('Checkout form displayed');
-}
-
-/**
- * Attach form listeners
- */
-function attachCheckoutFormListeners() {
-    const form = document.querySelector('#checkoutForm');
-    if (form) {
-        form.addEventListener('submit', handleCheckout);
-    }
-}
-
-/**
- * Handle checkout submission
- */
-async function handleCheckout(e) {
-    e.preventDefault();
-
-    const orderData = {
-        customerName: document.querySelector('input[name="name"]')?.value,
-        phone: document.querySelector('input[name="phone"]')?.value,
-        deliveryLocation: document.querySelector('input[name="location"]')?.value,
-        note: document.querySelector('textarea[name="note"]')?.value
-    };
-
-    try {
-        const cart = await api.getCart();
-        const whatsappMessage = generateWhatsAppMessage(orderData, cart);
-        
-        // Open WhatsApp
-        openWhatsApp(whatsappMessage);
-        
-        // Clear cart after order
-        await api.clearCart();
-        showAlert('Order sent via WhatsApp!', 'success');
-        
-    } catch (error) {
-        showAlert('Error processing checkout', 'error');
-        console.error(error);
-    }
-}
-
-/**
- * Generate WhatsApp Message
- */
-function generateWhatsAppMessage(orderData, cart) {
-    const storeName = window.storeSettings?.name || 'our store';
-    
-    let message = `Hello ${storeName} 👋\n\n`;
-    message += `I would like to place an order.\n\n`;
-    
-    message += `Products:\n`;
-    cart.items.forEach(item => {
-        message += `${item.name}${item.size ? ` (Size: ${item.size})` : ''} — ${item.quantity} × ${formatCurrency(item.price)}\n`;
-    });
-    
-    message += `\nTotal: ${formatCurrency(cart.total)}\n\n`;
-    
-    message += `Customer:\n`;
-    message += `Name: ${orderData.customerName}\n`;
-    message += `Phone: ${orderData.phone}\n`;
-    message += `Location: ${orderData.deliveryLocation}\n`;
-    
-    if (orderData.note) {
-        message += `\nNote:\n${orderData.note}`;
-    }
-    
-    message += `\n\nThank you.`;
-    
-    return message;
-}
-
-/**
- * Open WhatsApp
- */
-function openWhatsApp(message) {
-    const whatsappNumber = window.storeSettings?.whatsapp_number || window.storeSettings?.whatsappNumber || '0793087491';
-    const phone = formatWhatsAppNumber(whatsappNumber);
-    
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappURL = `https://wa.me/${phone}?text=${encodedMessage}`;
-    
-    window.open(whatsappURL, '_blank');
-}
 
 function formatWhatsAppNumber(value) {
     const digits = String(value || '').replace(/\D/g, '');

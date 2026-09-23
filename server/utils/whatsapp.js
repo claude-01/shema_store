@@ -26,28 +26,33 @@ function formatPhoneNumber(phone) {
 /**
  * Generate WhatsApp message
  */
-function generateWhatsAppMessage(order, customer, products) {
+function generateWhatsAppMessage(order, customer = {}, products = []) {
     let message = `Hello SHEMA STORE 👋\n\n`;
     message += `I would like to place an order.\n\n`;
-    
+
     message += `Products:\n`;
     products.forEach(product => {
         message += `${product.name} — ${product.quantity} × ${product.price}\n`;
     });
-    
+
     message += `\nTotal: ${order.total}\n\n`;
-    
-    message += `Customer:\n`;
-    message += `Name: ${customer.name}\n`;
-    message += `Phone: ${customer.phone}\n`;
-    message += `Location: ${customer.location}\n`;
-    
+
+    const customerLines = [];
+    if (customer.name) customerLines.push(`Name: ${customer.name}`);
+    if (customer.phone) customerLines.push(`Phone: ${customer.phone}`);
+    if (customer.location) customerLines.push(`Location: ${customer.location}`);
+
+    if (customerLines.length) {
+        message += `Customer:\n`;
+        message += `${customerLines.join('\n')}\n`;
+    }
+
     if (customer.note) {
         message += `\nNote:\n${customer.note}`;
     }
-    
+
     message += `\n\nThank you.`;
-    
+
     return message;
 }
 

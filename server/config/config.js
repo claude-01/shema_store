@@ -74,7 +74,7 @@ module.exports = {
     },
     uploads: {
         maxSize: 5 * 1024 * 1024, // 5MB
-        allowedMimes: ['image/jpeg', 'image/png', 'image/webp'],
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp']
+        allowedMimes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'avif']
     }
 };

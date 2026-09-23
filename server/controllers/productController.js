@@ -193,7 +193,8 @@ function mergeDuplicateVariants(products) {
 
 exports.getAllProducts = async (req, res) => {
     try {
-        const includeInactive = req.query.includeInactive === 'true' || Boolean(req.session && req.session.adminId);
+        const includeInactiveParam = req.query.includeInactive;
+        const includeInactive = includeInactiveParam === undefined ? true : includeInactiveParam === 'true';
 
         const cacheKey = includeInactive ? 'all' : 'active';
         const cachedResult = getCachedProductList();

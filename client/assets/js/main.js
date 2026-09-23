@@ -706,15 +706,28 @@ function renderCartPreview() {
     // attach quick order
     document.getElementById('cartPreviewOrder')?.addEventListener('click', async () => {
         const settings = await api.getStoreSettings().catch(()=>({}));
-        const number = settings.whatsapp_number || '';
+        const number = formatWhatsAppNumber(settings?.whatsapp_number || window.storeSettings?.whatsapp_number || '0793087491');
         if (!number) return alert('WhatsApp number not configured');
+
+        const currentUser = window.currentUser || null;
+        const firstName = currentUser?.first_name || currentUser?.firstName || '';
+        const lastName = currentUser?.last_name || currentUser?.lastName || '';
+        const customerName = [firstName, lastName].filter(Boolean).join(' ') || 'Customer';
+        const deliveryLocation = localStorage.getItem('delivery_location') || localStorage.getItem('delivery_city') || 'Unknown';
         const lines = [];
-        lines.push('Hello 👋');
+        lines.push(`Hello ${settings?.store_name || settings?.name || 'SHEMA STORE'} 👋`);
+        lines.push('');
         lines.push('I would like to order the following items:');
         items.forEach(it=>{
             lines.push(`${it.name || ('Product ' + it.productId)} — Qty: ${it.quantity || 1}`);
         });
-        lines.push('Delivery location: ' + (localStorage.getItem('delivery_location')||'Unknown'));
+        lines.push('');
+        lines.push(`Delivery location: ${deliveryLocation}`);
+        if (currentUser?.phone) lines.push(`Phone: ${currentUser.phone}`);
+        if (customerName && customerName !== 'Customer') lines.push(`Customer: ${customerName}`);
+        lines.push('');
+        lines.push('Please confirm availability and delivery time.');
+        lines.push('Thank you.');
         const message = encodeURIComponent(lines.join('\n'));
         window.open(`https://wa.me/${number}?text=${message}`,'_blank');
     });
@@ -903,12 +916,40 @@ function toggleWishlist(productId, button) {
             return;
         }
         if (btn.classList.contains('btn-quick-order')) {
-            // fetch product details and open quick order modal
             (async () => {
                 try {
                     const productData = await api.getProduct(id);
                     const p = productData && productData.product ? productData.product : productData;
-                    openQuickOrderModal(p);
+                    const settings = await api.getStoreSettings().catch(() => ({}));
+                    const number = formatWhatsAppNumber(settings?.whatsapp_number || window.storeSettings?.whatsapp_number || '0793087491');
+                    if (!number) {
+                        alert('WhatsApp number not configured');
+                        return;
+                    }
+
+                    const currentUser = window.currentUser || null;
+                    const firstName = currentUser?.first_name || currentUser?.firstName || '';
+                    const lastName = currentUser?.last_name || currentUser?.lastName || '';
+                    const customerName = [firstName, lastName].filter(Boolean).join(' ') || 'Customer';
+                    const deliveryLocation = localStorage.getItem('delivery_location') || localStorage.getItem('delivery_city') || 'Unknown';
+                    const lines = [];
+                    lines.push(`Hello ${settings?.store_name || settings?.name || 'SHEMA STORE'} 👋`);
+                    lines.push('');
+                    lines.push('I would like to order:');
+                    lines.push('');
+                    lines.push(`Product: ${p.name}`);
+                    lines.push(`Quantity: 1`);
+                    lines.push(`Price: ${formatCurrency(p.price || 0)}`);
+                    lines.push('');
+                    lines.push(`📍 Delivery location: ${deliveryLocation}`);
+                    if (currentUser?.phone) lines.push(`Phone: ${currentUser.phone}`);
+                    if (customerName && customerName !== 'Customer') lines.push(`Customer: ${customerName}`);
+                    lines.push('');
+                    lines.push('Please confirm availability and delivery details.');
+                    lines.push('Thank you.');
+
+                    const message = encodeURIComponent(lines.join('\n'));
+                    window.open(`https://wa.me/${number}?text=${message}`, '_blank');
                 } catch (err) {
                     console.error('Failed to load product for quick order', err);
                     alert('Failed to load product');
@@ -919,62 +960,37 @@ function toggleWishlist(productId, button) {
     }
 
 async function openQuickOrderModal(product) {
-    const existing = document.getElementById('quickOrderModal'); if (existing) existing.remove();
-    const modal = document.createElement('div');
-    modal.id = 'quickOrderModal';
-    modal.innerHTML = `
-        <div class="modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999">
-            <div class="modal" style="background:#fff;padding:20px;border-radius:8px;max-width:520px;width:100%">
-                <h3>Order ${product.name}</h3>
-                <label>Quantity</label>
-                <input id="qoQuantity" type="number" value="1" min="1" />
-                <label>Name (optional)</label>
-                <input id="qoName" type="text" />
-                <label>Phone (optional)</label>
-                <input id="qoPhone" type="text" placeholder="+250..." />
-                <label>Delivery address (optional)</label>
-                <input id="qoAddress" type="text" />
-                <div style="margin-top:12px;text-align:right">
-                    <button id="qoCancel" class="btn btn-secondary">Cancel</button>
-                    <button id="qoContinue" class="btn btn-whatsapp">Continue to WhatsApp</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    document.getElementById('qoCancel')?.addEventListener('click', () => modal.remove());
-    document.getElementById('qoContinue')?.addEventListener('click', async () => {
-        const qty = parseInt(document.getElementById('qoQuantity')?.value || '1', 10) || 1;
-        const name = document.getElementById('qoName')?.value || '';
-        const phone = document.getElementById('qoPhone')?.value || '';
-        const address = document.getElementById('qoAddress')?.value || '';
-        // build message
-        const settings = await api.getStoreSettings().catch(() => ({}));
-        const number = settings.whatsapp_number || '';
-        if (!number) { alert('WhatsApp number not configured'); return; }
-        const lines = [];
-        lines.push('Hello 👋');
-        lines.push('');
-        lines.push('I would like to order:');
-        lines.push('');
-        lines.push(`Product: ${product.name}`);
-        lines.push(`Quantity: ${qty}`);
-        lines.push(`Price: ${formatCurrency(product.price || 0)}`);
-        lines.push('');
-        const deliveryCity = localStorage.getItem('delivery_location') || 'Unknown';
-        lines.push(`📍 Delivery location: ${deliveryCity}`);
-        if (address) lines.push(`Address: ${address}`);
-        if (name) lines.push(`Name: ${name}`);
-        if (phone) lines.push(`Phone: ${phone}`);
-        lines.push('');
-        lines.push('Please confirm availability and delivery details.');
-        lines.push('Thank you.');
+    const settings = await api.getStoreSettings().catch(() => ({}));
+    const number = formatWhatsAppNumber(settings?.whatsapp_number || window.storeSettings?.whatsapp_number || '0793087491');
+    if (!number) {
+        alert('WhatsApp number not configured');
+        return;
+    }
 
-        const message = encodeURIComponent(lines.join('\n'));
-        const url = `https://wa.me/${number}?text=${message}`;
-        window.open(url, '_blank');
-        modal.remove();
-    });
+    const currentUser = window.currentUser || null;
+    const firstName = currentUser?.first_name || currentUser?.firstName || '';
+    const lastName = currentUser?.last_name || currentUser?.lastName || '';
+    const customerName = [firstName, lastName].filter(Boolean).join(' ') || 'Customer';
+    const deliveryLocation = localStorage.getItem('delivery_location') || localStorage.getItem('delivery_city') || 'Unknown';
+    const lines = [];
+    lines.push(`Hello ${settings?.store_name || settings?.name || 'SHEMA STORE'} 👋`);
+    lines.push('');
+    lines.push('I would like to order:');
+    lines.push('');
+    lines.push(`Product: ${product.name}`);
+    lines.push(`Quantity: 1`);
+    lines.push(`Price: ${formatCurrency(product.price || 0)}`);
+    lines.push('');
+    lines.push(`📍 Delivery location: ${deliveryLocation}`);
+    if (currentUser?.phone) lines.push(`Phone: ${currentUser.phone}`);
+    if (customerName && customerName !== 'Customer') lines.push(`Customer: ${customerName}`);
+    lines.push('');
+    lines.push('Please confirm availability and delivery details.');
+    lines.push('Thank you.');
+
+    const message = encodeURIComponent(lines.join('\n'));
+    const url = `https://wa.me/${number}?text=${message}`;
+    window.open(url, '_blank');
 }
 
 function fallbackCategories() {

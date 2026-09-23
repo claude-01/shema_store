@@ -806,7 +806,7 @@ async function loadHomePageContent() {
 }
 
 function createProductCard(product) {
-    const image = product.image || product.image_path || 'assets/images/placeholders/product.jpg';
+    const image = resolveSearchImage(product.image || product.image_path || 'assets/images/placeholders/product.jpg');
     const price = Number(product.price || 0);
     const title = product.name || 'Featured product';
     const stock = Number(product.stock || 0);
@@ -815,7 +815,7 @@ function createProductCard(product) {
     return `
         <article class="product-card" data-product-id="${product.id}">
             <div class="product-image-wrap">
-                <img src="${image}" alt="${title}" loading="lazy" />
+                <img src="${image}" alt="${title}" loading="lazy" onerror="this.onerror=null;this.src='/images/download.jpg'" />
             </div>
             <div class="product-body">
                 <div class="badge-row">
